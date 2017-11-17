@@ -1,0 +1,7 @@
+{;; Default configuration
+ ;; merged with project/configuration.edn
+
+ ;; if truthy, launches repls
+ :udp-repl 11211
+ :socket-repl 5571
+ }
