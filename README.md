@@ -50,6 +50,8 @@ Note that only the project root directory is added to the clojure load path.
 
 ![godot-hooks](https://user-images.githubusercontent.com/2467644/32961551-f5a26e12-cb96-11e7-88cb-6805067b3ec0.png)
 
+Note due to [Godot issue #11955](https://github.com/godotengine/godot/issues/11955) you may have to restart the editor for the hook properties to show up in the inspector.
+
 ### REPL
 
 ArcadiaGodot has both a socket repl (port 5571) and an UDP repl (port 11211). See [Arcadia](https://github.com/arcadia-unity/Arcadia/) for editor setup options.  Repls can be disabled or given other ports via a `{project}/configuration.edn` file.
@@ -60,7 +62,7 @@ For quick access try `telnet localhost 5571`.
 
 This is a bare boned Arcadia setup, and is missing several notable features from core Arcadia:
 
-* readers literals
+* reader literals
 * reactive file watching/configuration
 * package manager
 * Editor side clojure environment & repl
