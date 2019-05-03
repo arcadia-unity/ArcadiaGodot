@@ -13,11 +13,11 @@ Community
 
 Setup
 ----------
-You'll need to compile Godot with the mono module ([instructions](http://docs.godotengine.org/en/latest/development/compiling/compiling_with_mono.html)).  Godot does not include mono.  Clojure will not work with mono version `5.4.0.201`, and Godot seems to require mono `5.4.x`. I've had luck with mono `Stable (5.4.1.6)`.
+You'll need a version of [Godot with Mono](https://godotengine.org/download)
 
-The contents of this repository should be cloned into to a folder named `ArcadiaGodot` in a Godot project folder.
+This repository should be cloned into to a folder named `ArcadiaGodot` in the project folder.
 
-You'll need to edit the `{project}.csproj` file to include the following itemgroup.  You may have to run an initial `Mono>Build Project` command for this file to be generated.
+Edit the `{project}.csproj` file to include the following itemgroup.  You may have to run an initial `Build` in the Editor for this file to be generated.
 
 ```xml
   <ItemGroup>
@@ -44,13 +44,11 @@ Finally, you'll need at least one `ArcadiaHook.cs` script in your main scene.  Y
 
 Usage
 -----
-To run clojure code in your game, you'll need to associate signal methods with clojure `var` functions. In the inspector, `ArcadiaHook.cs` scripts will have string fields for each signal. Enter one or more vars separated by spaces in these fields.  If the namespace is loaded correctly, these fns will be called with the `ArcadiaHook` instance as the first argument (see Godot docs for additional arguments).
+To run clojure code, you'll need to associate signal methods with clojure `var` functions. In the inspector, `ArcadiaHook.cs` scripts will have string fields for each signal. Enter one or more vars separated by spaces in these fields.  If the namespace is loaded correctly, these fns will be called with the `ArcadiaHook` instance as the first argument (see Godot docs for additional arguments).
 
 Only the project root directory is added to the clojure load path.
 
 ![godot-hooks](https://user-images.githubusercontent.com/2467644/32961551-f5a26e12-cb96-11e7-88cb-6805067b3ec0.png)
-
-Note: due to [Godot issue #11955](https://github.com/godotengine/godot/issues/11955) you may have to restart the editor for the hook properties to show up in the inspector.
 
 ### REPL
 
