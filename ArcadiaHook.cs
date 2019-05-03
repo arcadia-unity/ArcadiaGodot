@@ -21,7 +21,7 @@ public class ArcadiaHook : Node
 
     public static void Initialize()
     {
-        GD.print("Starting Arcadia..");
+        GD.Print("Starting Arcadia..");
         System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
             System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+
             Path.PathSeparator+
@@ -29,7 +29,7 @@ public class ArcadiaHook : Node
         RT.load("clojure/core");
         RT.load("arcadia/repl");
         Invoke(RT.var("clojure.core", "require"), Symbol.intern("arcadia.repl"));
-		GD.print("Arcadia loaded!");
+		GD.Print("Arcadia loaded!");
     }
 
     public static object Invoke (Var v, object a)

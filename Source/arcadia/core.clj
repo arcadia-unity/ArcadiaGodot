@@ -7,7 +7,7 @@
 
 (defn log [& args]
   "Log message to the Godot Editor console. Arguments are combined into a string."
-  (GD/print (into-array (map #(str % " ") args))))
+  (GD/Print (into-array (map #(str % " ") args))))
 
 (defn ifn-arr [s]
   (let [xs  (re-seq #"[^ \t\n\r]+" s)

@@ -1,5 +1,5 @@
 (ns arcadia.linear
-  (import 
+  (:import 
     [Godot Vector3 Vector2 Node GD ResourceLoader 
       Node Node2D SceneTree Sprite]))
 
