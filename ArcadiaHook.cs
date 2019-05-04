@@ -10,6 +10,35 @@ public class ArcadiaHook : Node
 
     private static bool _initialized = false;
 
+    // workaround for spec issues
+    static void DisableSpecChecking()
+    {
+        System.Environment.SetEnvironmentVariable("CLOJURE_SPEC_CHECK_ASSERTS", "false");
+        System.Environment.SetEnvironmentVariable("CLOJURE_SPEC_SKIP_MACROS", "true");
+        System.Environment.SetEnvironmentVariable("clojure.spec.check-asserts", "false");
+        System.Environment.SetEnvironmentVariable("clojure.spec.skip-macros", "true");
+    }
+
+    public static void SetClojureLoadPath()
+    {
+        System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
+            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+
+            Path.PathSeparator+
+            System.IO.Directory.GetCurrentDirectory());        
+    }
+
+    public static void SetClojureLoadPathWithDLLs()
+    {
+        System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
+            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+
+            Path.PathSeparator+
+            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Infrastructure"+
+            Path.PathSeparator+
+            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"dlls"+
+            Path.PathSeparator+
+            System.IO.Directory.GetCurrentDirectory());        
+    }
+
     static ArcadiaHook()
     {
     }
@@ -22,13 +51,14 @@ public class ArcadiaHook : Node
     public static void Initialize()
     {
         GD.Print("Starting Arcadia..");
-        System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
-            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+
-            Path.PathSeparator+
-            System.IO.Directory.GetCurrentDirectory());
+        DisableSpecChecking();
+        SetClojureLoadPathWithDLLs();
         RT.load("clojure/core");
-        RT.load("arcadia/repl");
-        Invoke(RT.var("clojure.core", "require"), Symbol.intern("arcadia.repl"));
+        if (OS.IsDebugBuild()) {
+            GD.Print("Starting clojure REPL..");
+            RT.load("arcadia/repl");
+            Invoke(RT.var("clojure.core", "require"), Symbol.intern("arcadia.repl"));
+        }
 		GD.Print("Arcadia loaded!");
     }
 

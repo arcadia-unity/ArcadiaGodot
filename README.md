@@ -15,7 +15,7 @@ Setup
 ----------
 You'll need a version of [Godot with Mono](https://godotengine.org/download)
 
-This repository should be cloned into to a folder named `ArcadiaGodot` in the project folder.
+Clone this repository as `ArcadiaGodot` in your project folder.
 
 Edit the `{project}.csproj` file to include the following itemgroup.  You may have to run an initial `Build` in the Editor for this file to be generated.
 
@@ -56,6 +56,18 @@ ArcadiaGodot has both a socket repl (port 5571) and an UDP repl (port 11211). Se
 
 For quick access try `telnet localhost 5571`.
 
+### Exports
+
+After building your project you'll need to manually compile your clojure namespaces:
+
+```
+(require 'arcadia.internal.compiler)
+(arcadia.internal.compiler/aot "export/dlls" ['selfsame.core])
+```
+
+Note that the path must allready exist. You can place dlls in the root build directory or a folder named "dlls".
+
+
 ## Differences from Arcadia Unity
 
 This is a bare boned Arcadia setup, and is missing several notable features from core Arcadia:
@@ -67,10 +79,9 @@ This is a bare boned Arcadia setup, and is missing several notable features from
 * ArcadiaState & state serialization
 * scenegraph API
 * runtime hook attachment
-* AOT compilation - clojure code will be loaded from source at runtime
 * full `arcadia.linear` namespace with optimizations
 
-These will be slowly added in the future, especially once the Godot mono embedding is stabilized.
+These will be slowly added in the future.
 
 Contributing
 ------------

@@ -226,26 +226,28 @@
         (.Enqueue work-queue [incoming-code socket sender])))))
 
 (defn start-server [^long port]
-  (if @server-running
-    (log "REPL already running"))
-  (when-not @server-running
-    (reset! server-running true)
-    (let [socket (UdpClient. (IPEndPoint. IPAddress/Any port))]
-      (set! (.. socket Client ReceiveTimeout) 200)
-      (set! (.. socket Client SendBufferSize) (* 1024 5000)) ;; 5Mb
-      (set! (.. socket Client ReceiveBufferSize) (* 1024 5000)) ;; 5Mb
-      (.Start (Thread. (gen-delegate ThreadStart []
-                                    (log "Starting REPL...")
-                                    (while @server-running
-                                      (try 
-                                        (listen-and-block socket)
-                                        (eval-queue) ;do we need a queue?
-                                        (catch SocketException ex
-                                          (if (not= (.ErrorCode ex) SocketError/TimedOut)
-                                            (throw (Exception. "Unexpected Socket error" ex))))))
-                                    ;; TODO why does this line not execute?
-                                    (log "REPL Stopped"))))
-      socket)))
+  (try 
+    (if @server-running
+      (log "REPL already running"))
+    (when-not @server-running
+      (reset! server-running true)
+      (let [socket (UdpClient. (IPEndPoint. IPAddress/Any port))]
+        (set! (.. socket Client ReceiveTimeout) 200)
+        (set! (.. socket Client SendBufferSize) (* 1024 5000)) ;; 5Mb
+        (set! (.. socket Client ReceiveBufferSize) (* 1024 5000)) ;; 5Mb
+        (.Start (Thread. (gen-delegate ThreadStart []
+                                      (log "Starting REPL...")
+                                      (while @server-running
+                                        (try 
+                                          (listen-and-block socket)
+                                          (eval-queue) ;do we need a queue?
+                                          (catch SocketException ex
+                                            (if (not= (.ErrorCode ex) SocketError/TimedOut)
+                                              (throw (Exception. "Unexpected Socket error" ex))))))
+                                      ;; TODO why does this line not execute?
+                                      (log "REPL Stopped"))))
+        socket))
+      (catch Exception e (GD/Print (str e)))))
 
 (defn stop-server [^UdpClient socket]
   (log "Stopping REPL...")
@@ -272,8 +274,10 @@
 (defn start-socket-server
   ([] (start-socket-server nil))
   ([opts]
-   (s/start-server
-     (merge server-defaults opts))))
+   (try 
+     (s/start-server
+       (merge server-defaults opts))
+     (catch Exception e (GD/Print (str e))))))
 
 
 (if-let [port (:socket-repl arcadia.config/config)]
