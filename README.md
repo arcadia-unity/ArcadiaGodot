@@ -65,7 +65,9 @@ After building your project you'll need to manually compile your clojure namespa
 (arcadia.internal.compiler/aot "export/dlls" ['selfsame.core])
 ```
 
-Note that the path must allready exist. You can place dlls in the root build directory or a folder named "dlls".
+The entire dependency tree for the given namespaces will be compiled as well.
+
+Note: the path must allready exist. You can place dlls in the root build directory or a folder named "dlls".
 
 
 ## Differences from Arcadia Unity
