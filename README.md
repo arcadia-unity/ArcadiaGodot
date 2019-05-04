@@ -58,7 +58,7 @@ For quick access try `telnet localhost 5571`.
 
 ### Exports
 
-After building your project you'll need to manually compile your clojure namespaces:
+After building your project you'll need to manually compile your clojure namespaces into the build directory:
 
 ```
 (require 'arcadia.internal.compiler)
