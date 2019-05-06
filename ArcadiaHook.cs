@@ -77,6 +77,8 @@ public class ArcadiaHook : Node
         return ((IFn)v.getRawRoot()).invoke(a, b, c);
     }
 
+
+
     [Export]
     public string ready_fns = "";
     private IFn[] _ready_fns;
@@ -84,7 +86,14 @@ public class ArcadiaHook : Node
     {
         for (int i = 0; i < _ready_fns.Length; i++)
         {
-            _ready_fns[i].invoke(this);
+            try
+            {
+               _ready_fns[i].invoke(this);
+            }
+            catch (Exception err)
+            {
+               GD.Print(err);
+            }
         }
     }
 
@@ -111,7 +120,14 @@ public class ArcadiaHook : Node
 
         for (int i = 0; i < _enter_tree_fns.Length; i++)
         {
-            _enter_tree_fns[i].invoke(this);
+            try
+            {
+               _enter_tree_fns[i].invoke(this);
+            }
+            catch (Exception err)
+            {
+               GD.Print(err);
+            }
         }
     }
 
@@ -122,7 +138,14 @@ public class ArcadiaHook : Node
     {
         for (int i = 0; i < _exit_tree_fns.Length; i++)
         {
-            _exit_tree_fns[i].invoke(this);
+            try
+            {
+               _exit_tree_fns[i].invoke(this);
+            }
+            catch (Exception err)
+            {
+               GD.Print(err);
+            }
         }
     }
 
@@ -133,7 +156,14 @@ public class ArcadiaHook : Node
     {
         for (int i = 0; i < _process_fns.Length; i++)
         {
-            _process_fns[i].invoke(this, delta);
+            try
+            {
+               _process_fns[i].invoke(this, delta);
+            }
+            catch (Exception err)
+            {
+               GD.Print(err);
+            }     
         }
     }
 
@@ -144,7 +174,14 @@ public class ArcadiaHook : Node
     {
         for (int i = 0; i < _fixed_process_fns.Length; i++)
         {
-            _fixed_process_fns[i].invoke(this, delta);
+            try
+            {
+               _fixed_process_fns[i].invoke(this, delta);
+            }
+            catch (Exception err)
+            {
+               GD.Print(err);
+            }
         }
         
     }
@@ -156,7 +193,14 @@ public class ArcadiaHook : Node
     {
         for (int i = 0; i < _input_fns.Length; i++)
         {
-            _input_fns[i].invoke(this, e);
+            try
+            {
+               _input_fns[i].invoke(this, e);
+            }
+            catch (Exception err)
+            {
+               GD.Print(err);
+            }           
         }
     }
 
@@ -167,7 +211,14 @@ public class ArcadiaHook : Node
     {
         for (int i = 0; i < _unhandled_input_fns.Length; i++)
         {
-            _unhandled_input_fns[i].invoke(this, e);
+            try
+            {
+               _unhandled_input_fns[i].invoke(this, e);
+            }
+            catch (Exception err)
+            {
+               GD.Print(err);
+            }                  
         }
     }
     
