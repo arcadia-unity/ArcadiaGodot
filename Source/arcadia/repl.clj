@@ -212,6 +212,8 @@
                        (.Send socket bytes (.Length bytes) destination)))]
           (swap! ip-map assoc destination env2)                  ; update ip-map with new env
           (try
+            (log [code (eval code)])
+            (log result)
             (send result)
             (catch SocketException e
               (send (.ToString e)))))
