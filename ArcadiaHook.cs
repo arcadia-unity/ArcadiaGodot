@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using Path = System.IO.Path;
 using clojure.lang;
+using Arcadia;
 
 public class ArcadiaHook : Node
 {
@@ -58,6 +59,7 @@ public class ArcadiaHook : Node
             GD.Print("Starting clojure REPL..");
             RT.load("arcadia/repl");
             Invoke(RT.var("clojure.core", "require"), Symbol.intern("arcadia.repl"));
+            //NRepl.StartServer();
         }
 		GD.Print("Arcadia loaded!");
     }

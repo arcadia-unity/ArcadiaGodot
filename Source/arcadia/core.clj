@@ -2,8 +2,9 @@
   (:require
     clojure.string)
   (:import 
+    Helper
     [Godot Node GD ResourceLoader 
-      Node Node2D SceneTree Sprite]))
+      Node Node2D SceneTree Sprite Spatial]))
 
 (defn log [& args]
   "Log message to the Godot Editor console. Arguments are combined into a string."
@@ -35,3 +36,20 @@
 (defn load-scene [s]
   (let [scene (ResourceLoader/Load (str "res://" s) "PackedScene" true)]
     scene))
+
+(defn get-node 
+  "Uses the global scene viewport Node, \"/root/etc\""
+  [s]
+  (.GetNode (.Root (Godot.Engine/GetMainLoop)) (node-path s)))
+
+(defn find-node 
+  "Recursive find from global root, s is a wildcard string supporting * and ?"
+  [s]
+  (.FindNode (.Root (Godot.Engine/GetMainLoop)) s true false))
+
+(defn instance [pscn]
+  ;not so optional second arg, PackedScene.GenEditState.Disabled = 0
+  (.Instance pscn 0))
+
+(defn add-child [^Node node ^Node child]
+  (.AddChild node child true))
