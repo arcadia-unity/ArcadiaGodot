@@ -53,3 +53,49 @@
 
 (defn add-child [^Node node ^Node child]
   (.AddChild node child true))
+
+(defn remove-child [^Node node ^Node child]
+  (.RemoveChild node child))
+
+(defn parent [^Node node]
+  (.GetParent node (type-args Node)))
+
+(defn children [^Node node]
+  (.GetChildren node))
+
+(defn destroy [^Node node]
+  (.QueueFree node))
+
+(defn destroy-immediate [^Node node]
+  (.Free node))
+
+(defn is-qeued-for-deletion? [^Node node]
+  (.IsQueuedForDeletion node))
+
+
+
+; this works and is interesting as maybe how dynamic hooks work?
+'(.Connect (find-node "Button") "pressed" (Godot.Object.) "flarf" nil 0) 
+
+
+;TODO this code will crash godot session
+;figure out how to capture these kinds of exceptions 
+'(let [o (instance (load-scene "boid.tscn"))]
+  (destroy-immediate o)
+  (is-qeued-for-deletion? o) o)
+
+;as oposed to these which are fine
+'(throw (Exception. "foo"))
+
+'(defn foo [] "bar")
+
+'(gen-class
+ :name "Bird"
+ ;:implements [clojure.examples.IBar]
+ ;:prefix "impl-"
+ :methods [[foo [] String]])
+
+; No such var: clojure.core/gen-interface
+'(defprotocol Fly
+  "a protocol for flying"
+  (fly [this] "Method to fly"))

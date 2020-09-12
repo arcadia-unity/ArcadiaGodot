@@ -8,7 +8,7 @@ using Arcadia;
 public class ArcadiaHook : Node
 {
 
-
+    static Var RequireVar;
     private static bool _initialized = false;
 
     // workaround for spec issues
@@ -30,10 +30,19 @@ public class ArcadiaHook : Node
 
     public static void SetClojureLoadPathWithDLLs()
     {
+        RuntimeBootstrapFlag._startDefaultServer = false;
+        RuntimeBootstrapFlag.SkipSpecChecks = true;
+        RuntimeBootstrapFlag.CodeLoadOrder = new[] {
+                    RuntimeBootstrapFlag.CodeSource.InitType,
+                    RuntimeBootstrapFlag.CodeSource.FileSystem,
+                    RuntimeBootstrapFlag.CodeSource.EmbeddedResource };
+
         System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
             System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+
             Path.PathSeparator+
             System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Infrastructure"+
+            Path.PathSeparator+
+            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Infrastructure"+Path.DirectorySeparatorChar+"Desktop"+
             Path.PathSeparator+
             System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"dlls"+
             Path.PathSeparator+
@@ -52,7 +61,7 @@ public class ArcadiaHook : Node
     public static void Initialize()
     {
         GD.Print("Starting Arcadia..");
-        DisableSpecChecking();
+        //DisableSpecChecking();
         SetClojureLoadPathWithDLLs();
         RT.load("clojure/core");
         if (OS.IsDebugBuild()) {
@@ -62,6 +71,7 @@ public class ArcadiaHook : Node
             //NRepl.StartServer();
         }
 		GD.Print("Arcadia loaded!");
+        
     }
 
     public static object Invoke (Var v, object a)
@@ -224,5 +234,11 @@ public class ArcadiaHook : Node
         }
     }
     
+    public void _junk()
+	{
+
+        
+        
+	}
 
 }

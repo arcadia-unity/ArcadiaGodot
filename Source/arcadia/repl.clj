@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [with-bindings])
   (:require 
     [arcadia.config]
+    [clojure.core]
     [clojure.main :as m]
     [clojure.string :as str]
     ;[clojure.pprint :as pprint]
