@@ -92,7 +92,7 @@ public class ArcadiaHook : Node
             }
             catch (Exception err)
             {
-               GD.Print(err);
+               GD.PrintErr(err);
             }
         }
     }
@@ -144,7 +144,7 @@ public class ArcadiaHook : Node
             }
             catch (Exception err)
             {
-               GD.Print(err);
+               GD.PrintErr(err);
             }
         }
     }
@@ -162,7 +162,7 @@ public class ArcadiaHook : Node
             }
             catch (Exception err)
             {
-               GD.Print(err);
+               GD.PrintErr(err);
             }     
         }
     }
@@ -180,7 +180,7 @@ public class ArcadiaHook : Node
             }
             catch (Exception err)
             {
-               GD.Print(err);
+               GD.PrintErr(err);
             }
         }
         
@@ -199,7 +199,7 @@ public class ArcadiaHook : Node
             }
             catch (Exception err)
             {
-               GD.Print(err);
+               GD.PrintErr(err);
             }           
         }
     }
@@ -217,7 +217,7 @@ public class ArcadiaHook : Node
             }
             catch (Exception err)
             {
-               GD.Print(err);
+               GD.PrintErr(err);
             }                  
         }
     }
