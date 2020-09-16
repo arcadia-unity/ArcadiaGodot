@@ -2,7 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using clojure.lang;
 
-public class RuntimeHook : Godot.Object
+public class AdhocSignals : Godot.Object
 {
 
     public static void AddSignal(Godot.Object o, string name){
@@ -21,7 +21,13 @@ public class RuntimeHook : Godot.Object
     public Dictionary<int, IFn> functions = new Dictionary<int, IFn>();
 
     public void Register(int hash, IFn f){
-        functions.Add(hash, f);
+        try
+        {
+            functions.Add(hash, f);
+        }
+        catch (System.ArgumentException)
+        {
+        }
     }
 
     public void CatchMethod(int hash){

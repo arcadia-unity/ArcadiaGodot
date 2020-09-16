@@ -105,23 +105,51 @@
   |Godot.Vector3[]| 25
   |Godot.Color[]|   26 })
 
-(defonce runtime-hook (RuntimeHook.))
+(defonce ^:private adhoc-signals (AdhocSignals.))
 
-;TODO this should work with vars and redefinable bindings
-(defn connect [^Node node ^String signal-name f]
-  "Connects a node's signal to a function.  These connections share a Godot.Object instance and only one connection can be made for each node's signal."
-  (.Register runtime-hook (hash f) f)
-  (.Connect node signal-name runtime-hook "CatchMethod" 
+(defn ^:private _connect [^Node node ^String signal-name ^Godot.Object o f]
+  (.Register o (hash f) f)
+  (.Connect node signal-name o "CatchMethod" 
     (Godot.Collections.Array. (into-array Object [(hash f)])) 0))
 
+(defn connect
+  "Connects a node's signal to a function. These connections share a Godot.Object 
+   instance and only one connection can be made for each node's signal."
+  [^Node node ^String signal-name f]
+  (_connect node signal-name adhoc-signals f))
+
+(defn connect*
+  "Like `connect` b Returns the 
+   object as you may want to destroy it at some point."
+  [^Node node ^String signal-name f]
+  (let [o (AdhocSignals.)]
+    (_connect node signal-name o f) o))
+
+(defn connected? 
+  "Check if a signal is connected. If checking a `connect*` instance provide it 
+   as the third argument."
+  ([^Node node ^String signal-name]
+    (connected? node signal-name adhoc-signals))
+  ([^Node node ^String signal-name ^Godot.Object o]
+    (.IsConnected node signal-name o "CatchMethod")))
+
+(defn disconnect
+  "Disconnect a signal. If disconnecting a `connect*` instance provide it as 
+   the third argument."
+  ([^Node node ^String signal-name]
+    (disconnect node signal-name adhoc-signals))
+  ([^Node node ^String signal-name ^Godot.Object o]
+    (.Disconnect node signal-name o "CatchMethod")))
+
 (defn add-signal 
-  "Adds a user signal to the object, which can then be emitted with `emit`. args should be type literals matching those listed in the Godot.Variant.Type enum"
+  "Adds a user signal to the object, which can then be emitted with `emit`. args 
+   should be type literals matching those listed in the `Godot.Variant.Type` enum"
   ([^Godot.Object o ^String name]
-    (RuntimeHook/AddSignal o name))
+    (AdhocSignals/AddSignal o name))
   ([^Godot.Object o ^String name & args]
     (let [variants (remove nil? (map variants-enum args))
           names    (take (count variants) alphabet)]
-      (RuntimeHook/AddSignal o name (into-array System.String names) (into-array System.Int32 variants)))))
+      (AdhocSignals/AddSignal o name (into-array System.String names) (into-array System.Int32 variants)))))
 
 (defn emit
   "Emit's a node's signal."
@@ -129,10 +157,3 @@
     (.EmitSignal o name (|System.Object[]|. 0)))
   ([^Godot.Object o ^String name & args]
     (.EmitSignal o name (into-array Object args))))
-
-
-
-'(let [n (Node.)] 
-  (add-signal n "foo" Godot.Vector3)
-  (connect n "foo" (fn [v] (log "FOO SIGNAL" v)))
-  (emit (find-node "Button") "foo" (Godot.Vector3. 1 2 3)))
