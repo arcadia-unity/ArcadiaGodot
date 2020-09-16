@@ -21,22 +21,9 @@ Edit the `{project}.csproj` file to include the following itemgroup.  You may ha
 
 ```xml
   <ItemGroup>
-    <Compile Include="ArcadiaGodot\ArcadiaHook.cs" />
-    <Reference Include="Clojure">
-      <HintPath>ArcadiaGodot/Infrastructure/Clojure.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Dynamic">
-      <HintPath>ArcadiaGodot/Infrastructure/Microsoft.Dynamic.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Scripting">
-      <HintPath>ArcadiaGodot/Infrastructure/Microsoft.Scripting.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Scripting.Core">
-      <HintPath>ArcadiaGodot/Infrastructure/Microsoft.Scripting.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Scripting.Metadata">
-      <HintPath>ArcadiaGodot/Infrastructure/Microsoft.Scripting.Metadata.dll</HintPath>
-    </Reference>
+    <Compile Include="ArcadiaGodot\*.cs" />
+    <Reference Include="ArcadiaGodot/Infrastructure/*.dll"></Reference>
+    <Reference Include="ArcadiaGodot/Infrastructure/Desktop/*.dll"></Reference>
   </ItemGroup>
 ```
 

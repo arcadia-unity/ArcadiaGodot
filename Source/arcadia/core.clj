@@ -74,6 +74,7 @@
   (.IsQueuedForDeletion node))
 
 
+(def alphabet ["a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"])
 
 (def variants-enum {
   nil             0
@@ -106,191 +107,32 @@
 
 (defonce runtime-hook (RuntimeHook.))
 
+;TODO this should work with vars and redefinable bindings
 (defn connect [^Node node ^String signal-name f]
+  "Connects a node's signal to a function.  These connections share a Godot.Object instance and only one connection can be made for each node's signal."
   (.Register runtime-hook (hash f) f)
   (.Connect node signal-name runtime-hook "CatchMethod" 
     (Godot.Collections.Array. (into-array Object [(hash f)])) 0))
 
 (defn add-signal 
-  "Adds a user signal to the object, which can then be emitted with `emit`"
+  "Adds a user signal to the object, which can then be emitted with `emit`. args should be type literals matching those listed in the Godot.Variant.Type enum"
   ([^Godot.Object o ^String name]
     (RuntimeHook/AddSignal o name))
   ([^Godot.Object o ^String name & args]
-    (let [variants (zipmap (remove nil? (map variants-enum args)) "abcdefghijklmnopqrstuvwxyz")
-          arguments (map 
-                      (fn [[i n]] 
-                        (let [dict (Godot.Collections.Dictionary.)]
-                          (.Add dict "name" (str n))
-                          (.Add dict "type" i) dict)) 
-                      variants)]
-      (RuntimeHook/AddSignal o name (Godot.Collections.Array. (into-array Object arguments))))))
+    (let [variants (remove nil? (map variants-enum args))
+          names    (take (count variants) alphabet)]
+      (RuntimeHook/AddSignal o name (into-array System.String names) (into-array System.Int32 variants)))))
 
 (defn emit
+  "Emit's a node's signal."
   ([^Godot.Object o ^String name]
-    (RuntimeHook/Emit o name))
+    (.EmitSignal o name (|System.Object[]|. 0)))
   ([^Godot.Object o ^String name & args]
-    (RuntimeHook/Emit o name (Godot.Collections.Array. (into-array Object args)))))
+    (.EmitSignal o name (into-array Object args))))
 
 
 
-'(connect (find-node "Button") "pressed" (fn [] (log "BUTTON WAS PRESSED")))
-'(connect (find-node "Button") "button_down" (fn [] (log "BUTTON DOWN")))
-
-'(connect (find-node "Button2") "pressed" (fn [] (throw (Exception. "hmm"))))
-
-
-'(add-signal (find-node "Button") "foo")
-
-'(connect (find-node "Button") "foo" (fn [] (log "FOO SIG")))
-; this doesn't match 0 arity, but i can't pass nil here?
-'(emit (find-node "Button") "foo")
-
-
-'(add-signal (find-node "Button") "bark" System.String)
-'(connect (find-node "Button") "bark" (fn [a] (log "bark SIG" [a])))
-'(emit (find-node "Button") "bark" "Woof" (Godot.Vector3.))
-
-
-
-
-
-
-
-'(for [i (range 1 12)
-      :let [args (take i "abcdefghijklmnop")
-            typed (apply str (map #(str "Object " % ", ") args))
-            invoked (apply str (interpose ", " args ))]]
-  (print 
-    (str "    public void CatchMethod(" typed "int hash){\n")
-    "       try\n"
-    "       {\n"
-    (str "           functions[hash].invoke(" invoked ");\n")
-    "       }\n"
-    "       catch (System.Exception err)\n"
-    "       {\n"
-    "           GD.PrintErr(err);\n"
-    "       }\n"
-    "   }\n\n"))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-;; ============================================================
-;; defcomponent 
-;; ============================================================
-
-(defmacro defleaked [var]
-  `(def ~(with-meta (symbol (name var)) {:private true})
-     (var-get (find-var '~var))))
-
-(defleaked clojure.core/validate-fields)
-(defleaked clojure.core/parse-opts+specs)
-(defleaked clojure.core/build-positional-factory)
-
-(defn- emit-defclass* 
-  "Do not use this directly - use defcomponent"
-  [tagname name extends assem fields interfaces methods]
-  (assert (and (symbol? extends) (symbol? assem)))
-  (let [classname (with-meta
-                    (symbol
-                      (str (namespace-munge *ns*) "." name))
-                    (meta name))
-        interfaces (conj interfaces 'clojure.lang.IType)]
-    `(defclass*
-       ~tagname ~classname
-       ~extends ~assem
-       ~fields 
-       :implements ~interfaces 
-       ~@methods)))
-
-(defmacro defcomponent*
-  [name fields & opts+specs]
-  (validate-fields fields name)
-  (let [gname name 
-        [interfaces methods opts] (parse-opts+specs opts+specs)
-        ns-part (namespace-munge *ns*)
-        classname (symbol (str ns-part "." gname))
-        hinted-fields fields
-        fields (vec (map #(with-meta % nil) fields))
-        [field-args over] (split-at 20  fields)]
-    `(let []
-       ~(emit-defclass*
-          name
-          gname
-          'Godot.Node
-          'Godot
-          (vec hinted-fields)
-          (vec interfaces)
-          methods)
-       (import ~classname)
-       ~(build-positional-factory gname classname fields)
-       ~classname)))
-
-;TODO error is to long maybe?
-(defn- normalize-method-implementations [mimpls]
-  (for [[[protocol] impls] (partition 2
-                             (partition-by symbol? mimpls))
-        [name args & fntail] impls]
-    (mu/lit-map protocol name args fntail)))
-
-(defn- find-message-protocol-symbol [s]
-  (symbol (str "arcadia.messages/I" s)))
-
-(defn- awake-method? [{:keys [name]}]
-  (= name 'Awake))
-
-(defn- normalize-message-implementations [msgimpls]
-  (for [[name args & fntail] msgimpls
-        :let [protocol (find-message-protocol-symbol name)]]
-    (mu/lit-map protocol name args fntail)))
-
-(defn- process-method [{:keys [protocol name args fntail]}]
-  [protocol `(~name ~args ~@fntail)])
-
-(defn- process-awake-method [impl]
-  (process-method
-    (update-in impl [:fntail]
-      #(cons `(require (quote ~(ns-name *ns*))) %))))
-
-(defn ^:private ensure-has-awake [mimpls]
-  (if (some awake-method? mimpls)
-    mimpls
-    (cons {:protocol (find-message-protocol-symbol 'Awake)
-           :name     'Awake
-           :args     '[this]
-           :fntail   nil}
-      mimpls)))
-
-(defn- process-defcomponent-method-implementations [mimpls]
-  (let [[msgimpls impls] ((juxt take-while drop-while)
-                          (complement symbol?)
-                          mimpls)
-        nrmls            (ensure-has-awake
-                           (concat
-                             (normalize-message-implementations msgimpls)
-                             (normalize-method-implementations impls)))]
-    (apply concat
-      (for [impl nrmls]
-        (if (awake-method? impl)
-          (process-awake-method impl)
-          (process-method impl))))))
-
-(defmacro defcomponent
-  "Defines a new component."
-  [name fields & method-impls] 
-  (let [fields2 (mapv #(vary-meta % assoc :unsynchronized-mutable true) fields) ;make all fields mutable
-        method-impls2 (process-defcomponent-method-implementations method-impls)]
-    `(defcomponent* ~name ~fields2 ~@method-impls2)))
-
-
+'(let [n (Node.)] 
+  (add-signal n "foo" Godot.Vector3)
+  (connect n "foo" (fn [v] (log "FOO SIGNAL" v)))
+  (emit (find-node "Button") "foo" (Godot.Vector3. 1 2 3)))

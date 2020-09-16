@@ -9,16 +9,13 @@ public class RuntimeHook : Godot.Object
         o.AddUserSignal(name);
     }
 
-    public static void AddSignal(Godot.Object o, string name, Godot.Collections.Array arguments){
+    public static void AddSignal(Godot.Object o, string name, string[] names, int[] types){
+        Godot.Collections.Array arguments = new Godot.Collections.Array();
+        for (int i = 0; i < names.Length; i++)
+        {
+            arguments.Add(new Godot.Collections.Dictionary {{ "name", names[i] }, { "type", types[i] }});
+        }
         o.AddUserSignal(name, arguments);
-    }
-
-    public static void Emit(Godot.Object o, string name){
-        o.EmitSignal(name);
-    }
-
-    public static void Emit(Godot.Object o, string name, Godot.Collections.Array arguments){
-        o.EmitSignal(name, arguments);
     }
 
     public Dictionary<int, IFn> functions = new Dictionary<int, IFn>();
@@ -38,7 +35,7 @@ public class RuntimeHook : Godot.Object
         }
     }
 
-    public void CatchMethod(Object a, int hash){
+    public void CatchMethod(System.Object a, int hash){
         try
         {
             functions[hash].invoke(a);
@@ -49,7 +46,7 @@ public class RuntimeHook : Godot.Object
         }
     }
 
-    public void CatchMethod(Object a, Object b, int hash){
+    public void CatchMethod(System.Object a, System.Object b, int hash){
         try
         {
             functions[hash].invoke(a, b);
@@ -60,7 +57,7 @@ public class RuntimeHook : Godot.Object
         }
     }
 
-    public void CatchMethod(Object a, Object b, Object c, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, int hash){
         try
         {
             functions[hash].invoke(a, b, c);
@@ -71,7 +68,7 @@ public class RuntimeHook : Godot.Object
         }
     }
 
-    public void CatchMethod(Object a, Object b, Object c, Object d, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, int hash){
         try
         {
             functions[hash].invoke(a, b, c, d);
@@ -82,7 +79,7 @@ public class RuntimeHook : Godot.Object
         }
     }
 
-    public void CatchMethod(Object a, Object b, Object c, Object d, Object e, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, int hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e);
@@ -93,7 +90,7 @@ public class RuntimeHook : Godot.Object
         }
     }
 
-    public void CatchMethod(Object a, Object b, Object c, Object d, Object e, Object f, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, int hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f);
@@ -104,7 +101,7 @@ public class RuntimeHook : Godot.Object
         }
     }
 
-    public void CatchMethod(Object a, Object b, Object c, Object d, Object e, Object f, Object g, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, int hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f, g);
@@ -115,7 +112,7 @@ public class RuntimeHook : Godot.Object
         }
     }
 
-    public void CatchMethod(Object a, Object b, Object c, Object d, Object e, Object f, Object g, Object h, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, int hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f, g, h);
@@ -126,7 +123,7 @@ public class RuntimeHook : Godot.Object
         }
     }
 
-    public void CatchMethod(Object a, Object b, Object c, Object d, Object e, Object f, Object g, Object h, Object i, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, System.Object i, int hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f, g, h, i);
@@ -137,7 +134,7 @@ public class RuntimeHook : Godot.Object
         }
     }
 
-    public void CatchMethod(Object a, Object b, Object c, Object d, Object e, Object f, Object g, Object h, Object i, Object j, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, System.Object i, System.Object j, int hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f, g, h, i, j);
@@ -148,7 +145,7 @@ public class RuntimeHook : Godot.Object
         }
     }
 
-    public void CatchMethod(Object a, Object b, Object c, Object d, Object e, Object f, Object g, Object h, Object i, Object j, Object k, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, System.Object i, System.Object j, System.Object k, int hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f, g, h, i, j, k);
@@ -158,4 +155,5 @@ public class RuntimeHook : Godot.Object
             GD.PrintErr(err);
         }
     }
+
 }
