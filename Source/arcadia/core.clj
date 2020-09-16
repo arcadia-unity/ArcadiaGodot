@@ -119,8 +119,8 @@
   (_connect node signal-name adhoc-signals f))
 
 (defn connect*
-  "Like `connect` b Returns the 
-   object as you may want to destroy it at some point."
+  "Like `connect` but uses a unique Godot.Object for multiple connections to one 
+   signal. Returns the object if you need to `disconnect` or `destroy` it later."
   [^Node node ^String signal-name f]
   (let [o (AdhocSignals.)]
     (_connect node signal-name o f) o))
