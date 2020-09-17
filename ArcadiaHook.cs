@@ -1,6 +1,5 @@
 using Godot;
 using System;
-using System.IO;
 using Path = System.IO.Path;
 using clojure.lang;
 
@@ -55,13 +54,13 @@ public class ArcadiaHook : Node
         SetClojureLoadPathWithDLLs();
         RT.load("clojure/core");
         if (OS.IsDebugBuild()) {
-            GD.Print("Starting clojure REPL..");
             RT.load("arcadia/repl");
             Invoke(RT.var("clojure.core", "require"), Symbol.intern("arcadia.repl"));
         }
 		GD.Print("Arcadia loaded!");
     }
 
+    //TODO these are in Util.cs
     public static object Invoke (Var v, object a)
     {
         return ((IFn)v.getRawRoot()).invoke(a);

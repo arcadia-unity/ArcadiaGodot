@@ -3,7 +3,7 @@
     arcadia.core)
   (:require
     clojure.string
-    [arcadia.config :as config])
+    [arcadia.internal.config :as config])
   (:import
     [ArcadiaHook]))
 

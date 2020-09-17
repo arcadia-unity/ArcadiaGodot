@@ -39,7 +39,7 @@ Only the project root directory is added to the clojure load path.
 
 ### REPL
 
-ArcadiaGodot has both a socket repl (port 5571) and an UDP repl (port 11211). See [Arcadia](https://github.com/arcadia-unity/Arcadia/) for editor setup options.  Repls can be disabled or given other ports via a `{project}/configuration.edn` file.
+ArcadiaGodot has an nRepl (port 3722), a socket repl (port 5571) and an UDP repl (port 11211). See [Arcadia](https://github.com/arcadia-unity/Arcadia/) for editor setup options.  Repls can be disabled or given other ports via a `{project}/configuration.edn` file.
 
 For quick access try `telnet localhost 5571`.
 
@@ -66,7 +66,6 @@ This is a bare boned Arcadia setup, and is missing several notable features from
 * package manager
 * Editor side clojure environment & repl
 * ArcadiaState & state serialization
-* scenegraph API
 * runtime hook attachment
 * full `arcadia.linear` namespace with optimizations
 

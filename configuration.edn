@@ -1,7 +1,10 @@
 {;; Default configuration
  ;; merged with project/configuration.edn
 
- ;; if truthy, launches repls
+ ;; repl ports, comment out or set to nil to disable
  :udp-repl 11211
  :socket-repl 5571
+ :nrepl 3722
+
+ :nrepl-auto-completion false
  }

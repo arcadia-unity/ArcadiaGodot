@@ -90,7 +90,6 @@ namespace Arcadia
 		private static IPersistentMap readStringOptions;
 		private static Var evalVar;
 		private static Var prStrVar;
-		private static Var addCallbackVar;
 		private static Var star1Var;
 		private static Var star2Var;
 		private static Var star3Var;
@@ -110,12 +109,10 @@ namespace Arcadia
 
 		static NRepl ()
 		{
-			string socketReplNsName = "arcadia.internal.socket-repl";
+			string socketReplNsName = "arcadia.internal.nrepl-support";
 			Util.require(socketReplNsName);
 			Util.getVar(ref errorStringVar, socketReplNsName, "error-string");
 
-			Util.require("arcadia.internal.editor-callbacks");
-			addCallbackVar = RT.var("arcadia.internal.editor-callbacks", "add-callback");
 			readStringVar = RT.var("clojure.core", "read-string");
 			evalVar = RT.var("clojure.core", "eval");
 			prStrVar = RT.var("clojure.core", "pr-str");
@@ -137,8 +134,8 @@ namespace Arcadia
 			completeVar = RT.var("arcadia.internal.nrepl-support", "complete");
 
 			Util.require("arcadia.internal.config");
-			configVar = RT.var("arcadia.internal.config", "config");
-
+			configVar = RT.var("arcadia.internal.config", "get-config");
+			
 			readStringOptions = PersistentHashMap.EMPTY.assoc(Keyword.intern("read-cond"), Keyword.intern("allow"));
 
 			shimsNS = Namespace.findOrCreate(Symbol.intern("arcadia.nrepl.shims"));
@@ -389,12 +386,12 @@ namespace Arcadia
 					break;
 				case "eval":
 					var fn = new EvalFn(message, client);
-					addCallbackVar.invoke(fn);
+					fn.invoke();
 					break;
 				case "load-file":
 					message["code"] = new BString("(do " + message["file"].ToString() + " )");
 					var loadFn = new EvalFn(message, client);
-					addCallbackVar.invoke(loadFn);
+					loadFn.invoke();
 					break;
 				case "eldoc":
 				case "info":
@@ -512,16 +509,15 @@ namespace Arcadia
 			}
 		}
 
-		private const int Port = 3722;
-
 		public static void StopServer ()
 		{
 			running = false;
 		}
 
-		public static void StartServer ()
+		public static void StartServer (int Port)
 		{
-			GD.Print("nrepl: starting");
+
+			GD.Print("nrepl: starting on port ", Port);
 			
 			running = true;
 			new Thread(() => {
@@ -530,7 +526,6 @@ namespace Arcadia
 				{
 					// TODO make IPAddress.Loopback configurable to allow remote connections
 					listener.Start();
-					GD.Print("nrepl: listening on port {0}", Port);
 					while (running)
 					{
 						if (!listener.Pending())
@@ -542,7 +537,7 @@ namespace Arcadia
 						var client = listener.AcceptTcpClient();
 						new Thread(() =>
 						{
-							GD.Print("nrepl: connected to client {0}", client.Client.RemoteEndPoint);
+							GD.Print("nrepl: connected to client ", client.Client.RemoteEndPoint);
 							var parser = new BencodeNET.Parsing.BencodeParser();
 							var clientRunning = true;
 							var buffer = new byte[1024 * 8]; // 8k buffer
@@ -631,11 +626,11 @@ namespace Arcadia
 								}
 								catch (Exception e)
 								{
-									GD.Print("nrepl: {0}", e);
+									GD.Print("nrepl: ", e);
 									clientRunning = false;
 								}
 							}
-							GD.Print("nrepl: disconnected from client {0}", client.Client.RemoteEndPoint);
+							GD.Print("nrepl: disconnected from client ", client.Client.RemoteEndPoint);
 							client.Close();
 							client.Dispose();
 						}).Start();
@@ -651,7 +646,7 @@ namespace Arcadia
 				}
 				finally
 				{
-					GD.Print("nrepl: closing port {0}", Port);
+					GD.Print("nrepl: closing port ", Port);
 					listener.Stop();
 				}
 				

@@ -1,7 +1,7 @@
 (ns arcadia.repl
   (:refer-clojure :exclude [with-bindings])
   (:require 
-    [arcadia.config]
+    [arcadia.internal.config]
     [clojure.main :as m]
     [clojure.string :as str]
     ;[clojure.pprint :as pprint]
@@ -13,7 +13,8 @@
     [System.Net IPEndPoint IPAddress]
     [System.Net.Sockets UdpClient SocketException SocketError]
     [System.Threading Thread ThreadStart]
-    [System.Text Encoding]))
+    [System.Text Encoding]
+    [Arcadia NRepl]))
 
 (defn log [& args]
   "Log message to the Godot Editor console. Arguments are combined into a string."
@@ -236,7 +237,7 @@
         (set! (.. socket Client SendBufferSize) (* 1024 5000)) ;; 5Mb
         (set! (.. socket Client ReceiveBufferSize) (* 1024 5000)) ;; 5Mb
         (.Start (Thread. (gen-delegate ThreadStart []
-                                      (log "Starting REPL...")
+                                      (log "udp-repl: starting on port " port)
                                       (while @server-running
                                         (try 
                                           (listen-and-block socket)
@@ -280,7 +281,10 @@
      (catch Exception e (GD/Print (str e))))))
 
 
-(if-let [port (:socket-repl arcadia.config/config)]
+(when-let [port (:socket-repl arcadia.internal.config/config)]
+  (log "socket-repl: starting on port " port)
   (start-socket-server {:port port}))
-(if-let [port (:udp-repl arcadia.config/config)]
+(when-let [port (:udp-repl arcadia.internal.config/config)]
   (start-server port))
+(when-let [port (:nrepl arcadia.internal.config/config)]
+  (Arcadia.NRepl/StartServer port))

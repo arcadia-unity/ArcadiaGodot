@@ -1,4 +1,4 @@
-(ns arcadia.config)
+(ns arcadia.internal.config)
 
 (def config 
   (merge 
@@ -8,3 +8,5 @@
     (read-string
       (try (slurp "configuration.edn" :encoding "utf-8")
            (catch Exception e "{}")))))
+
+(defn get-config [] config)
