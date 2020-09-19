@@ -36,7 +36,6 @@
   (let [scene (ResourceLoader/Load (str "res://" s) "PackedScene" true)]
     scene))
 
-
 (defn get-node 
   "Uses the global scene viewport Node, \"/root/etc\""
   [s]

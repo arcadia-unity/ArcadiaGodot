@@ -59,6 +59,11 @@ public class ArcadiaHook : Node
         if (OS.IsDebugBuild()) {
             RT.load("arcadia/repl");
             Invoke(RT.var("clojure.core", "require"), Symbol.intern("arcadia.repl"));
+            RT.load("arcadia/internal/config");
+            if (RT.booleanCast(Arcadia.Util.Invoke(RT.var("arcadia.internal.config", "get-config-key"), "reload-on-change")))
+            {
+                var watcher = new ArcadiaWatcher();
+            }
         }
 		GD.Print("Arcadia loaded!");
     }

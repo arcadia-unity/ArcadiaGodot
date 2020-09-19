@@ -74,7 +74,6 @@ Note: the path must allready exist. You can place dlls in the root build directo
 This is a bare boned Arcadia setup, and is missing several notable features from core Arcadia:
 
 * reader literals
-* reactive file watching/configuration
 * package manager
 * Editor side clojure environment & repl
 * ArcadiaState & state serialization

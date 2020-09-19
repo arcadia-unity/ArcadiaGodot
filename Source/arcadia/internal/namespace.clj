@@ -5,3 +5,10 @@
   [ns-sym]
   (when-not (contains? (loaded-libs) ns-sym)
     (require ns-sym)))
+
+(defn load-absolute-path [s]
+  (load-file s))
+
+
+
+

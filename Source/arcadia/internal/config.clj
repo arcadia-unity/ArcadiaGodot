@@ -10,3 +10,5 @@
            (catch Exception e "{}")))))
 
 (defn get-config [] config)
+
+(defn get-config-key [s] (get config (keyword s)))
