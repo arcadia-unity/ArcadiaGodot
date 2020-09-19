@@ -24,13 +24,15 @@ public class ArcadiaHook : Node
         System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
             System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+
             Path.PathSeparator+
+            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Clojure"+
+            Path.PathSeparator+
             System.IO.Directory.GetCurrentDirectory());        
     }
 
     public static void SetClojureLoadPathWithDLLs()
     {
         System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
-            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+
+            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+Path.DirectorySeparatorChar+
             Path.PathSeparator+
             System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Infrastructure"+
             Path.PathSeparator+
