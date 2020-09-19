@@ -15,15 +15,14 @@ Setup
 ----------
 You'll need a version of [Godot with Mono](https://godotengine.org/download)
 
-Clone this repository as `ArcadiaGodot` in your project folder.
+Clone this repository into your project folder.
 
 Edit the `{project}.csproj` file to include the following itemgroup.  You may have to run an initial `Build` in the Editor for this file to be generated.
 
 ```xml
   <ItemGroup>
-    <Compile Include="ArcadiaGodot\*.cs" />
-    <Reference Include="ArcadiaGodot/Infrastructure/*.dll"></Reference>
-    <Reference Include="ArcadiaGodot/Infrastructure/Desktop/*.dll"></Reference>
+    <Compile Include="ArcadiaGodot/**/*.cs" />
+    <Reference Include="ArcadiaGodot/Infrastructure/**/*.dll"></Reference>
   </ItemGroup>
 ```
 
@@ -31,11 +30,24 @@ Finally, you'll need at least one `ArcadiaHook.cs` script in your main scene.  Y
 
 Usage
 -----
-To run clojure code, you'll need to associate signal methods with clojure `var` functions. In the inspector, `ArcadiaHook.cs` scripts will have string fields for each signal. Enter one or more vars separated by spaces in these fields.  If the namespace is loaded correctly, these fns will be called with the `ArcadiaHook` instance as the first argument (see Godot docs for additional arguments).
 
-Only the project root directory is added to the clojure load path.
+### ArcadiaHook.cs
+
+The `ArcadiaHook` script lets you connect Godot's [callbacks](https://docs.godotengine.org/en/stable/getting_started/step_by_step/scripting_continued.html#overridable-functions) to clojure functions.
 
 ![godot-hooks](https://user-images.githubusercontent.com/2467644/32961551-f5a26e12-cb96-11e7-88cb-6805067b3ec0.png)
+
+Note that these fns will be called with the *parent* of the `ArcadiaHook` instance as the first argument (the `ArcadiaHook` script inherits `Node` and would prevent manipulating any non `Node` properties on it's own node).  For example if you are manipulating a camera you would attach the hook as a child like so:
+
+![Screenshot 2020-09-19 000059](https://user-images.githubusercontent.com/2467644/93654101-d5ed0d00-f9e9-11ea-8c67-53df86244af1.jpg)
+
+### Signals
+
+[Signals](https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html) are Godot's system for events. `arcadia.core` contains functions for working with signals: `connect`, `disconnect`, `connected?`, `add-signal`, and `emit`.
+
+`(connect (find-node "Button") "pressed" (fn [] (log "button was pressed!")))`
+
+Most built in nodes emit a range of useful signals (like buttons being pressed, physics collisions). If you connect a var (like `#'game.core/handle-newgame`) you will be able to redefine the function in the repl.
 
 ### REPL
 
@@ -67,9 +79,6 @@ This is a bare boned Arcadia setup, and is missing several notable features from
 * Editor side clojure environment & repl
 * ArcadiaState & state serialization
 * runtime hook attachment
-* full `arcadia.linear` namespace with optimizations
-
-These will be slowly added in the future.
 
 Contributing
 ------------

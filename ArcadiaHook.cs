@@ -6,8 +6,9 @@ using clojure.lang;
 public class ArcadiaHook : Node
 {
 
-
     private static bool _initialized = false;
+
+    public Node target;
 
     // workaround for spec issues
     static void DisableSpecChecking()
@@ -108,6 +109,8 @@ public class ArcadiaHook : Node
             _initialized = true;
             Initialize();
         }
+        target = this.GetParent();
+
         Invoke(RT.var("clojure.core", "require"), Symbol.intern("arcadia.core"));
         _ready_fns = (IFn[])Invoke(RT.var("arcadia.core", "ifn-arr"), ready_fns);
         _enter_tree_fns = (IFn[])Invoke(RT.var("arcadia.core", "ifn-arr"), enter_tree_fns);
@@ -121,7 +124,7 @@ public class ArcadiaHook : Node
         {
             try
             {
-               _enter_tree_fns[i].invoke(this);
+               _enter_tree_fns[i].invoke(target);
             }
             catch (Exception err)
             {
@@ -139,7 +142,7 @@ public class ArcadiaHook : Node
         {
             try
             {
-               _exit_tree_fns[i].invoke(this);
+               _exit_tree_fns[i].invoke(target);
             }
             catch (Exception err)
             {
@@ -157,7 +160,7 @@ public class ArcadiaHook : Node
         {
             try
             {
-               _process_fns[i].invoke(this, delta);
+               _process_fns[i].invoke(target, delta);
             }
             catch (Exception err)
             {
@@ -175,7 +178,7 @@ public class ArcadiaHook : Node
         {
             try
             {
-               _fixed_process_fns[i].invoke(this, delta);
+               _fixed_process_fns[i].invoke(target, delta);
             }
             catch (Exception err)
             {
@@ -194,7 +197,7 @@ public class ArcadiaHook : Node
         {
             try
             {
-               _input_fns[i].invoke(this, e);
+               _input_fns[i].invoke(target, e);
             }
             catch (Exception err)
             {
@@ -212,7 +215,7 @@ public class ArcadiaHook : Node
         {
             try
             {
-               _unhandled_input_fns[i].invoke(this, e);
+               _unhandled_input_fns[i].invoke(target, e);
             }
             catch (Exception err)
             {
@@ -220,6 +223,5 @@ public class ArcadiaHook : Node
             }                  
         }
     }
-    
 
 }

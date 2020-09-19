@@ -1,7 +1,6 @@
 (ns arcadia.core
   (:require
-    clojure.string
-    [arcadia.internal.map-utils :as mu])
+    clojure.string)
   (:import 
     [Godot Node GD ResourceLoader 
       Node Node2D SceneTree Sprite Spatial]))
@@ -49,7 +48,6 @@
   (.FindNode (.Root (Godot.Engine/GetMainLoop)) s true false))
 
 (defn instance [pscn]
-  ;not so optional second arg, PackedScene.GenEditState.Disabled = 0
   (.Instance pscn 0))
 
 (defn add-child [^Node node ^Node child]
@@ -147,7 +145,7 @@
   ([^Godot.Object o ^String name]
     (AdhocSignals/AddSignal o name))
   ([^Godot.Object o ^String name & args]
-    (let [variants (remove nil? (map variants-enum args))
+    (let [variants (remove nil? (map (fn [t] (get variants-enum t 17)) args))
           names    (take (count variants) alphabet)]
       (AdhocSignals/AddSignal o name (into-array System.String names) (into-array System.Int32 variants)))))
 
@@ -157,3 +155,11 @@
     (.EmitSignal o name (|System.Object[]|. 0)))
   ([^Godot.Object o ^String name & args]
     (.EmitSignal o name (into-array Object args))))
+
+
+
+(defn ^Godot.Vector3 position [^Spatial o]
+  (.Translation o))
+
+(defn position! [^Spatial o ^Vector3 v]
+  (.SetTranslation o v))
