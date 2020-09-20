@@ -26,20 +26,32 @@ Edit the `{project}.csproj` file to include the following itemgroup.  You may ha
   </ItemGroup>
 ```
 
-Finally, you'll need at least one `ArcadiaHook.cs` script in your main scene.  You'll then be able to build (play button) and connect to one of the repls.
+Finally, you'll need at least one `ArcadiaHook.cs` script in your main scene.  You'll then be able to build (play button) and connect to one of the repls or reload `.clj` files that have changed.
 
 Usage
 -----
 
 ### ArcadiaHook.cs
 
-The `ArcadiaHook` script lets you connect Godot's [callbacks](https://docs.godotengine.org/en/stable/getting_started/step_by_step/scripting_continued.html#overridable-functions) to clojure functions.
+While working in the editor, the `ArcadiaHook` script lets you connect Godot's [callbacks](https://docs.godotengine.org/en/stable/getting_started/step_by_step/scripting_continued.html#overridable-functions) to clojure functions.
 
 ![godot-hooks](https://user-images.githubusercontent.com/2467644/32961551-f5a26e12-cb96-11e7-88cb-6805067b3ec0.png)
 
 Note that these fns will be called with the *parent* of the `ArcadiaHook` instance as the first argument (the `ArcadiaHook` script inherits `Node` and would prevent manipulating any non `Node` properties on it's own node).  For example if you are manipulating a camera you would attach the hook as a child like so:
 
 ![Screenshot 2020-09-19 000059](https://user-images.githubusercontent.com/2467644/93654101-d5ed0d00-f9e9-11ea-8c67-53df86244af1.jpg)
+
+### Hooks
+
+You can hook functions to Godot nodes in clojure with `hook+` and `hook-`.  This has the same usage as `Arcadia`'s hooks. Godot's hook types are `:enter-tree :exit-tree :ready :process :physics-process :input :unhandled-input`.
+
+```clj
+;add a anonymous hook function to the player's _Input method
+(hook+ (find-node "player") :input :bar-key (fn [o k e] (log "input event:" e)))
+
+;remove a hook fn on the menu node
+(hook- (find-node "menu") :ready :my-key)
+```
 
 ### Signals
 

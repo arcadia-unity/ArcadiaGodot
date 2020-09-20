@@ -1,234 +1,307 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 using Path = System.IO.Path;
 using clojure.lang;
 
-public class ArcadiaHook : Node
+namespace Arcadia
 {
 
-    private static bool _initialized = false;
+    public class Boot {
+        private static bool _initialized = false;
 
-    public Node target;
-
-    // workaround for spec issues
-    static void DisableSpecChecking()
-    {
-        System.Environment.SetEnvironmentVariable("CLOJURE_SPEC_CHECK_ASSERTS", "false");
-        System.Environment.SetEnvironmentVariable("CLOJURE_SPEC_SKIP_MACROS", "true");
-        System.Environment.SetEnvironmentVariable("clojure.spec.check-asserts", "false");
-        System.Environment.SetEnvironmentVariable("clojure.spec.skip-macros", "true");
-    }
-
-    public static void SetClojureLoadPath()
-    {
-        System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
-            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+
-            Path.PathSeparator+
-            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Clojure"+
-            Path.PathSeparator+
-            System.IO.Directory.GetCurrentDirectory());        
-    }
-
-    public static void SetClojureLoadPathWithDLLs()
-    {
-        System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
-            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+Path.DirectorySeparatorChar+
-            Path.PathSeparator+
-            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Infrastructure"+
-            Path.PathSeparator+
-            System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"dlls"+
-            Path.PathSeparator+
-            System.IO.Directory.GetCurrentDirectory());        
-    }
-
-    static ArcadiaHook()
-    {
-    }
-
-    public ArcadiaHook()
-    {
-
-    }
-
-    public static void Initialize()
-    {
-        GD.Print("Starting Arcadia..");
-        DisableSpecChecking();
-        SetClojureLoadPathWithDLLs();
-        RT.load("clojure/core");
-        if (OS.IsDebugBuild()) {
-            RT.load("arcadia/repl");
-            Invoke(RT.var("clojure.core", "require"), Symbol.intern("arcadia.repl"));
-            RT.load("arcadia/internal/config");
-            if (RT.booleanCast(Arcadia.Util.Invoke(RT.var("arcadia.internal.config", "get-config-key"), "reload-on-change")))
-            {
-                var watcher = new ArcadiaWatcher();
-            }
-        }
-		GD.Print("Arcadia loaded!");
-    }
-
-    //TODO these are in Util.cs
-    public static object Invoke (Var v, object a)
-    {
-        return ((IFn)v.getRawRoot()).invoke(a);
-    }
-
-    public static object Invoke (Var v, object a, object b)
-    {
-        return ((IFn)v.getRawRoot()).invoke(a, b);
-    }
-
-    public static object Invoke (Var v, object a, object b, object c)
-    {
-        return ((IFn)v.getRawRoot()).invoke(a, b, c);
-    }
-
-
-
-    [Export]
-    public string ready_fns = "";
-    private IFn[] _ready_fns;
-    public override void _Ready()
-    {
-        for (int i = 0; i < _ready_fns.Length; i++)
+        static void DisableSpecChecking()
         {
-            try
+            System.Environment.SetEnvironmentVariable("CLOJURE_SPEC_CHECK_ASSERTS", "false");
+            System.Environment.SetEnvironmentVariable("CLOJURE_SPEC_SKIP_MACROS", "true");
+            System.Environment.SetEnvironmentVariable("clojure.spec.check-asserts", "false");
+            System.Environment.SetEnvironmentVariable("clojure.spec.skip-macros", "true");
+        }
+
+        public static void SetClojureLoadPath()
+        {
+            System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
+                System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+
+                Path.PathSeparator+
+                System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Clojure"+
+                Path.PathSeparator+
+                System.IO.Directory.GetCurrentDirectory());        
+        }
+
+        public static void SetClojureLoadPathWithDLLs()
+        {
+            System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
+                System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+Path.DirectorySeparatorChar+
+                Path.PathSeparator+
+                System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Infrastructure"+
+                Path.PathSeparator+
+                System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"dlls"+
+                Path.PathSeparator+
+                System.IO.Directory.GetCurrentDirectory());        
+        }
+
+        public static void Initialize()
+        {
+            if (!_initialized)
             {
-               _ready_fns[i].invoke(this);
-            }
-            catch (Exception err)
-            {
-               GD.PrintErr(err);
+                _initialized = true;
+                GD.Print("Starting Arcadia..");
+                DisableSpecChecking();
+                SetClojureLoadPathWithDLLs();
+                RT.load("clojure/core");
+                if (OS.IsDebugBuild()) {
+                    RT.load("arcadia/repl");
+                    Util.Invoke(RT.var("clojure.core", "require"), Symbol.intern("arcadia.repl"));
+                    RT.load("arcadia/internal/config");
+                    if (RT.booleanCast(Util.Invoke(RT.var("arcadia.internal.config", "get-config-key"), "reload-on-change")))
+                    {
+                        var watcher = new ArcadiaWatcher();
+                    }
+                }
+                GD.Print("Arcadia loaded!");
             }
         }
     }
 
+	public class ArcadiaHook : Node
+	{
+        public Node target;
 
+        private Dictionary<string, IFn> _enter_tree_fns = new Dictionary<string, IFn>();
+        private Dictionary<string, IFn> _exit_tree_fns = new Dictionary<string, IFn>();
+        private Dictionary<string, IFn> _ready_fns = new Dictionary<string, IFn>();
+        private Dictionary<string, IFn> _process_fns = new Dictionary<string, IFn>();
+        private Dictionary<string, IFn> _physics_process_fns = new Dictionary<string, IFn>();
+        private Dictionary<string, IFn> _input_fns = new Dictionary<string, IFn>();
+        private Dictionary<string, IFn> _unhandled_input_fns = new Dictionary<string, IFn>();
 
-    [Export]
-    public string enter_tree_fns = "";
-    private IFn[] _enter_tree_fns;
-    public override void _EnterTree()
-    {
-        if (!_initialized)
-        {
-            _initialized = true;
-            Initialize();
+        [Export]
+        public string ready_fn = "";
+        [Export]
+        public string enter_tree_fn = "";
+        [Export]
+        public string exit_tree_fn = "";
+        [Export]
+        public string process_fn = "";
+        [Export]
+        public string physics_process_fn = "";
+        [Export]
+        public string input_fn = "";
+        [Export]
+        public string unhandled_input_fn = "";
+
+        public void RemoveAll(){
+            _enter_tree_fns.Clear();
+            _exit_tree_fns.Clear();
+            _ready_fns.Clear();
+            _process_fns.Clear();
+            _physics_process_fns.Clear();
+            _input_fns.Clear();
+            _unhandled_input_fns.Clear();
         }
-        target = this.GetParent();
 
-        Invoke(RT.var("clojure.core", "require"), Symbol.intern("arcadia.core"));
-        _ready_fns = (IFn[])Invoke(RT.var("arcadia.core", "ifn-arr"), ready_fns);
-        _enter_tree_fns = (IFn[])Invoke(RT.var("arcadia.core", "ifn-arr"), enter_tree_fns);
-        _exit_tree_fns = (IFn[])Invoke(RT.var("arcadia.core", "ifn-arr"), exit_tree_fns);
-        _process_fns = (IFn[])Invoke(RT.var("arcadia.core", "ifn-arr"), process_fns);
-        _fixed_process_fns = (IFn[])Invoke(RT.var("arcadia.core", "ifn-arr"), fixed_process_fns);
-        _input_fns = (IFn[])Invoke(RT.var("arcadia.core", "ifn-arr"), input_fns);
-        _unhandled_input_fns = (IFn[])Invoke(RT.var("arcadia.core", "ifn-arr"), unhandled_input_fns);
-
-        for (int i = 0; i < _enter_tree_fns.Length; i++)
-        {
-            try
+        public void Add(string type, string k, IFn v){
+            switch (type)
             {
-               _enter_tree_fns[i].invoke(target);
-            }
-            catch (Exception err)
-            {
-               GD.Print(err);
+                case "_enter_tree":
+                    _enter_tree_fns[k] = v;
+                    break;
+                case "_exit_tree":
+                    _exit_tree_fns[k] = v;
+                    break;
+                case "_ready":
+                    _ready_fns[k] = v;
+                    break;
+                case "_process":
+                    _process_fns[k] = v;
+                    break;
+                case "_physics_process":
+                    _physics_process_fns[k] = v;
+                    break;
+                case "_input":
+                    _input_fns[k] = v;
+                    break;
+                case "_unhandled_input":
+                    _unhandled_input_fns[k] = v;
+                    break;
+                default:
+                    throw new System.ArgumentException("unknown hook type: "+type, "type");
             }
         }
+
+        public void Remove(string type, string k){
+            switch (type)
+            {
+                case "_enter_tree_fns":
+                    if (_enter_tree_fns.ContainsKey(k))
+                    {
+                        _enter_tree_fns.Remove(k);
+                    }
+                    break;
+                case "_exit_tree_fns":
+                    if (_exit_tree_fns.ContainsKey(k))
+                    {
+                        _exit_tree_fns.Remove(k);
+                    }
+                    break;
+                case "_ready_fns":
+                    if (_ready_fns.ContainsKey(k))
+                    {
+                        _ready_fns.Remove(k);
+                    }
+                    break;
+                case "_process":
+                    if (_process_fns.ContainsKey(k))
+                    {
+                        _process_fns.Remove(k);
+                    }
+                    break;
+                case "_physics_process_fns":
+                    if (_physics_process_fns.ContainsKey(k))
+                    {
+                        _physics_process_fns.Remove(k);
+                    }
+                    break;
+                case "_input_fns":
+                    if (_input_fns.ContainsKey(k))
+                    {
+                        _input_fns.Remove(k);
+                    }
+                    break;
+                case "_unhandled_input_fns":
+                    if (_unhandled_input_fns.ContainsKey(k))
+                    {
+                        _unhandled_input_fns.Remove(k);
+                    }
+                    break;
+                default:
+                    throw new System.ArgumentException("unknown hook type", "type");
+            }
+        }
+
+        public void AddEditorHook(string type, string field){
+            IFn fn = (IFn)Util.Invoke(RT.var("arcadia.internal.namespace", "eval-ifn"), field);
+            if (fn != null)
+            {
+                Add(type, "editor", fn);
+            }
+        }
+
+        // overridable methods
+
+        public override void _EnterTree()
+        {
+            Boot.Initialize();
+            target = this.GetParent();
+            AddEditorHook("_enter_tree", enter_tree_fn);
+            AddEditorHook("_exit_tree", exit_tree_fn);
+            AddEditorHook("_ready", ready_fn);
+            AddEditorHook("_process", process_fn);
+            AddEditorHook("_physics_process", physics_process_fn);
+            AddEditorHook("_input", input_fn);
+            AddEditorHook("_unhandled_input", unhandled_input_fn);
+            foreach (var item in _enter_tree_fns)
+            {
+                try
+                {
+                    item.Value.invoke(target, Keyword.intern(item.Key));
+                }
+                catch (Exception err)
+                {
+                    GD.PrintErr(err);
+                }     
+            }
+        }
+
+        public override void _ExitTree()
+        {
+            foreach (var item in _exit_tree_fns)
+            {
+                try
+                {
+                    item.Value.invoke(target, Keyword.intern(item.Key));
+                }
+                catch (Exception err)
+                {
+                    GD.PrintErr(err);
+                }     
+            }
+        }
+
+        public override void _Ready()
+        {
+            foreach (var item in _ready_fns)
+            {
+                try
+                {
+                    item.Value.invoke(target, Keyword.intern(item.Key));
+                }
+                catch (Exception err)
+                {
+                    GD.PrintErr(err);
+                }     
+            }
+        }
+
+        public override void _Process(float delta)
+        {
+            foreach (var item in _process_fns)
+            {
+                try
+                {
+                    item.Value.invoke(target, Keyword.intern(item.Key), delta);
+                }
+                catch (Exception err)
+                {
+                    GD.PrintErr(err);
+                }     
+            }
+        }
+
+        public override void _PhysicsProcess(float delta)
+        {
+            foreach (var item in _physics_process_fns)
+            {
+                try
+                {
+                    item.Value.invoke(target, Keyword.intern(item.Key), delta);
+                }
+                catch (Exception err)
+                {
+                    GD.PrintErr(err);
+                }     
+            }
+        }
+
+        public override void _Input(InputEvent e)
+        {
+            foreach (var item in _input_fns)
+            {
+                try
+                {
+                    item.Value.invoke(target, Keyword.intern(item.Key), e);
+                }
+                catch (Exception err)
+                {
+                    GD.PrintErr(err);
+                }     
+            }
+        }
+
+        public override void _UnhandledInput(InputEvent e)
+        {
+            foreach (var item in _unhandled_input_fns)
+            {
+                try
+                {
+                    item.Value.invoke(target, Keyword.intern(item.Key), e);
+                }
+                catch (Exception err)
+                {
+                    GD.PrintErr(err);
+                }     
+            }
+        }
+
     }
-
-    [Export]
-    public string exit_tree_fns = "";
-    private IFn[] _exit_tree_fns;
-    public override void _ExitTree()
-    {
-        for (int i = 0; i < _exit_tree_fns.Length; i++)
-        {
-            try
-            {
-               _exit_tree_fns[i].invoke(target);
-            }
-            catch (Exception err)
-            {
-               GD.PrintErr(err);
-            }
-        }
-    }
-
-    [Export]
-    public string process_fns = "";
-    private IFn[] _process_fns;
-    public override void _Process(float delta)
-    {
-        for (int i = 0; i < _process_fns.Length; i++)
-        {
-            try
-            {
-               _process_fns[i].invoke(target, delta);
-            }
-            catch (Exception err)
-            {
-               GD.PrintErr(err);
-            }     
-        }
-    }
-
-    [Export]
-    public string fixed_process_fns = "";
-    private IFn[] _fixed_process_fns;
-    public override void _PhysicsProcess(float delta)
-    {
-        for (int i = 0; i < _fixed_process_fns.Length; i++)
-        {
-            try
-            {
-               _fixed_process_fns[i].invoke(target, delta);
-            }
-            catch (Exception err)
-            {
-               GD.PrintErr(err);
-            }
-        }
-        
-    }
-
-    [Export]
-    public string input_fns = "";
-    private IFn[] _input_fns;
-    public override void _Input(InputEvent e)
-    {
-        for (int i = 0; i < _input_fns.Length; i++)
-        {
-            try
-            {
-               _input_fns[i].invoke(target, e);
-            }
-            catch (Exception err)
-            {
-               GD.PrintErr(err);
-            }           
-        }
-    }
-
-    [Export]
-    public string unhandled_input_fns = "";
-    private IFn[] _unhandled_input_fns;
-    public override void _UnhandledInput(InputEvent e)
-    {
-        for (int i = 0; i < _unhandled_input_fns.Length; i++)
-        {
-            try
-            {
-               _unhandled_input_fns[i].invoke(target, e);
-            }
-            catch (Exception err)
-            {
-               GD.PrintErr(err);
-            }                  
-        }
-    }
-
 }
