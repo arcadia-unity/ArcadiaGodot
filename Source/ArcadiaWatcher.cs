@@ -61,7 +61,15 @@ public class ArcadiaWatcher
                 
                 if (path != null){
                     GD.Print("reloading ", path);
-                    Arcadia.Util.Invoke(RT.var("clojure.core", "load-file"), path);
+                    try
+                    {
+                        Arcadia.Util.Invoke(RT.var("clojure.core", "load-file"), path);
+                    }
+                    catch (System.Exception e)
+                    {
+                        GD.PrintErr(e);
+                    }
+                    
                 }
                 
             }
