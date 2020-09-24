@@ -66,6 +66,7 @@ namespace Arcadia
 	public class ArcadiaHook : Node
 	{
         public Node target;
+        public System.Object state;
 
         private Dictionary<string, IFn> _enter_tree_fns = new Dictionary<string, IFn>();
         private Dictionary<string, IFn> _exit_tree_fns = new Dictionary<string, IFn>();

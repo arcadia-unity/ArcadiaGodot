@@ -22,6 +22,9 @@
   ([node s] (group! node s true))
   ([node s pers] (.AddToGroup node s pers)))
 
+(defn in-group? [^Godot.Node node ^System.String group]
+  (.IsInGroup node group))
+
 (defn change-scene
   "Changes the root scene to the one at the given path"
   [s]
@@ -151,15 +154,6 @@
     (.EmitSignal o name (into-array Object args))))
 
 
-
-
-(defn ^Godot.Vector3 position [^Spatial o]
-  (.Translation o))
-
-(defn position! [^Spatial o ^Vector3 v]
-  (.SetTranslation o v))
-
-
 (def hook-types {
   :enter-tree "_enter_tree"
   :exit-tree "_exit_tree"
@@ -169,9 +163,10 @@
   :input "_input"
   :unhandled-input "_unhandled_input"})
 
+;TODO make this a C# helper, it'll be used a lot for state fns
 (defn ^:private ensure-hook [^Node node]
   (let [node (obj node)]
-    (or (first (filter (fn [x] (= Arcadia.ArcadiaHook (type x))) (.GetChildren node)))
+    (or (Arcadia.Util/GetHook node)
       (let [o (Arcadia.ArcadiaHook.)]
         (.AddChild node o true) o))))
 
@@ -207,3 +202,14 @@
         h (ensure-hook node)]
     (.RemoveAll h) node))
 
+
+(defn state [^Node node]
+  (if-let [^ArcadiaHook hook (Arcadia.Util/GetHook node)] 
+    (.state hook)))
+
+(defn set-state [^Node node ^System.Object value]
+  (set! (.state (ensure-hook node)) value))
+
+(defn update-state [^Node node ^clojure.lang.IFn f]
+  (let [hook (ensure-hook node)]
+    (set! (.state hook) (f (.state hook)))))

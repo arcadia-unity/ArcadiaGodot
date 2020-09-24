@@ -83,13 +83,11 @@ Note: the path must allready exist. You can place dlls in the root build directo
 
 ## Differences from Arcadia Unity
 
-This is a bare boned Arcadia setup, and is missing several notable features from core Arcadia:
+Notable Arcadia features missing from ArcadiaGodot:
 
 * reader literals
-* package manager
-* Editor side clojure environment & repl
-* ArcadiaState & state serialization
-* runtime hook attachment
+* package manager 
+* Editor side clojure environment
 
 Contributing
 ------------

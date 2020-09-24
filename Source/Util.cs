@@ -7,6 +7,17 @@ namespace Arcadia
 	public class Util
 	{
 
+		public static ArcadiaHook GetHook(Godot.Node o){
+			for (int i = 0; i < o.GetChildCount(); i++)
+			{
+				ArcadiaHook found = o.GetChildOrNull<ArcadiaHook>(i);
+				if (found != null){
+					return found;
+				}
+			}
+			return null;
+		}
+
 		// ==================================================================
 		// tuple implementation
 		public struct Tuple2<T, V>
