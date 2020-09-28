@@ -25,6 +25,9 @@
 (defn in-group? [^Godot.Node node ^System.String group]
   (.IsInGroup node group))
 
+(defn objects-in-group [^System.String group]
+  (.GetNodesInGroup (Godot.Engine/GetMainLoop) group))
+
 (defn change-scene
   "Changes the root scene to the one at the given path"
   [s]
@@ -33,6 +36,11 @@
 (defn load-scene [s]
   (let [scene (ResourceLoader/Load (str "res://" s) "PackedScene" true)]
     scene))
+
+(defn ^Node root
+  "returns the root node"
+  []
+  (.Root (Godot.Engine/GetMainLoop)))
 
 (defn get-node 
   "Uses the global scene viewport Node, \"/root/etc\""
@@ -203,13 +211,80 @@
     (.RemoveAll h) node))
 
 
-(defn state [^Node node]
-  (if-let [^ArcadiaHook hook (Arcadia.Util/GetHook node)] 
-    (.state hook)))
+(defn state 
+  ([^Node node k] (get (state node) k))
+  ([^Node node]
+    (if-let [^ArcadiaHook hook (Arcadia.Util/GetHook node)] 
+      (.state hook))))
 
-(defn set-state [^Node node ^System.Object value]
-  (set! (.state (ensure-hook node)) value))
+(defn update-state 
+  ([^Node node k ^clojure.lang.IFn f]
+    (update-state node (fn [m] (update m k f))))
+  ([^Node node ^clojure.lang.IFn f]
+    (let [hook (ensure-hook node)]
+      (set! (.state hook) (f (.state hook))))))
 
-(defn update-state [^Node node ^clojure.lang.IFn f]
-  (let [hook (ensure-hook node)]
-    (set! (.state hook) (f (.state hook)))))
+(defn set-state 
+  ([^Node node k ^System.Object value]
+    (update-state node (fn [m] (assoc m k value))))
+  ([^Node node ^System.Object value]
+    (set! (.state (ensure-hook node)) value)))
+
+(defn timeout 
+  "invoke fn `f` after `n` seconds"
+  [^System.Double n ^clojure.lang.IFn f]
+  (connect (.CreateTimer (Godot.Engine/GetMainLoop) n true) "timeout" f))
+
+(def tween-ease-enum {
+  :in     0
+  :out    1
+  :in-out 2
+  :out-in 3})
+
+(def tween-transition-enum {
+  :linear  0
+  :sine    1
+  :quint   2
+  :quart   3
+  :quad    4
+  :expo    5
+  :elastic 6
+  :cubic   7
+  :circ    8
+  :bounce  9
+  :back    10})
+
+(defn tween
+  "Creates a Tween node, mounts it to the root node, runs the tween, then destroys the node. 
+  `property` is a snake_case string of the property coordinates, you can hover over properties in the inspector to see their path
+  Can take an option map of: 
+    `:transition` (`:linear :sine :quint :quart :quad :expo :elastic :cubic :circ :bounce :back`)
+    `:easing` (`:in :out :in-out :out-in`)
+    `:delay` (float seconds)
+    `:callback` (fn to call when tween completes)
+
+  example:
+  ```
+  (tween (find-node \"New\") \"rect_rotation\" 0 90 2 {:transition :elastic :callback (fn [] (log \"callback\"))})
+  ```
+    "
+  ([object property initialVal finalVal duration] (tween object property initialVal finalVal duration {}))
+  ([object property initialVal finalVal duration {:keys [transition easing delay callback]}]
+    (let [^System.Object t (Godot.Tween.)]
+      (add-child (root) t)
+      (.InterpolateProperty t object (Godot.NodePath. property) initialVal finalVal duration 
+        (get tween-transition-enum transition 0)
+        (get tween-ease-enum easing 2) (or delay 0))
+      (connect* t "tween_all_completed" (fn [] (if callback (callback)) (destroy t)))
+      (.Start t) t)))
+
+
+(defn play-sound 
+  ([s] (play-sound s 0))
+  ([s n]
+    (let [audio (Godot.AudioStreamPlayer.)]
+      (add-child (root) audio)
+      (set! (.VolumeDb audio) (float n))
+      (set! (.Stream audio) (load-scene s))
+      (.Play audio 0)
+      (connect* audio "finished" (fn [] (destroy audio))))))

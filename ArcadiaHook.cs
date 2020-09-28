@@ -49,9 +49,10 @@ namespace Arcadia
                 DisableSpecChecking();
                 SetClojureLoadPathWithDLLs();
                 RT.load("clojure/core");
+                RT.load("arcadia/internal/namespace");
                 if (OS.IsDebugBuild()) {
                     RT.load("arcadia/repl");
-                    Util.Invoke(RT.var("clojure.core", "require"), Symbol.intern("arcadia.repl"));
+                    Util.Invoke(RT.var("arcadia.repl", "launch"), null);
                     RT.load("arcadia/internal/config");
                     if (RT.booleanCast(Util.Invoke(RT.var("arcadia.internal.config", "get-config-key"), "reload-on-change")))
                     {

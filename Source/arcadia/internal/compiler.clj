@@ -5,7 +5,7 @@
     clojure.string
     [arcadia.internal.config :as config])
   (:import
-    [ArcadiaHook]))
+    [Arcadia.Boot]))
 
 (defn- aot-namespaces [path nss]
    ;; We want to ensure that namespaces are neither double-aot'd, nor
@@ -32,8 +32,10 @@
 
 (defn aot [path ns-syms]
   "aot ns-syms to the given path, with all dependencies"
-  (ArcadiaHook/SetClojureLoadPath)
+  (Arcadia.Boot/SetClojureLoadPath)
   (aot-namespaces path (concat ns-syms [
     'clojure.core
-    'clojure.core.server]))
-  (ArcadiaHook/SetClojureLoadPathWithDLLs))
+    'clojure.core.server
+    'arcadia.internal.namespace
+    'arcadia.repl]))
+  (Arcadia.Boot/SetClojureLoadPathWithDLLs))

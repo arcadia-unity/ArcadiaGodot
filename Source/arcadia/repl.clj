@@ -280,11 +280,11 @@
        (merge server-defaults opts))
      (catch Exception e (GD/Print (str e))))))
 
-
-(when-let [port (:socket-repl arcadia.internal.config/config)]
-  (log "socket-repl: starting on port " port)
-  (start-socket-server {:port port}))
-(when-let [port (:udp-repl arcadia.internal.config/config)]
-  (start-server port))
-(when-let [port (:nrepl arcadia.internal.config/config)]
-  (Arcadia.NRepl/StartServer port))
+(defn launch [_]
+  (when-let [port (:socket-repl arcadia.internal.config/config)]
+    (log "socket-repl: starting on port " port)
+    (start-socket-server {:port port}))
+  (when-let [port (:udp-repl arcadia.internal.config/config)]
+    (start-server port))
+  (when-let [port (:nrepl arcadia.internal.config/config)]
+    (Arcadia.NRepl/StartServer port)))
