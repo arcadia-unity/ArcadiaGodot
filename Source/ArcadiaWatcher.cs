@@ -27,7 +27,14 @@ public class ArcadiaWatcher
         watcher.Changed += OnChanged;
         watcher.Created += OnChanged;
         watcher.Renamed += OnChanged;
-        watcher.EnableRaisingEvents = true;
+
+        //osx can have System.IO.IOException: Operation not supported
+        try{
+            watcher.EnableRaisingEvents = true;
+        }
+        catch (Exception err) {
+            GD.PrintErr(err);
+        }
 
         System.Threading.Timer timer = new System.Threading.Timer(this.DrainChanges, new AutoResetEvent(false), 100, 100);
 
