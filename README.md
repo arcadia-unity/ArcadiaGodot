@@ -13,7 +13,7 @@ Community
 
 Setup
 ----------
-You'll need a version of [Godot with Mono](https://godotengine.org/download)
+You'll need a version of [Godot with Mono](https://godotengine.org/download) and `MSBuild` (see the Requirements section on the download page).
 
 Clone this repository into your project folder.
 
@@ -85,9 +85,9 @@ Note: the path must allready exist. You can place dlls in the root build directo
 
 Notable Arcadia features missing from ArcadiaGodot:
 
-* reader literals
 * package manager 
 * Editor side clojure environment
+* reader literals and object serialization
 
 Contributing
 ------------

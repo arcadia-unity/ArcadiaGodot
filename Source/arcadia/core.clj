@@ -53,6 +53,7 @@
   (.FindNode (.Root (Godot.Engine/GetMainLoop)) s true false))
 
 (defn instance [pscn]
+  "Instance a PackedScene"
   (.Instance pscn 0))
 
 (defn add-child [^Node node ^Node child]
@@ -212,12 +213,14 @@
 
 
 (defn state 
+  "Retrieves state stored on an object's ArcadiaHook, second arity retrieves by key k"
   ([^Node node k] (get (state node) k))
   ([^Node node]
     (if-let [^ArcadiaHook hook (Arcadia.Util/GetHook node)] 
       (.state hook))))
 
-(defn update-state 
+(defn update-state
+  "Updates state stored on an object's ArcadiaHook"
   ([^Node node k ^clojure.lang.IFn f]
     (update-state node (fn [m] (update m k f))))
   ([^Node node ^clojure.lang.IFn f]
@@ -225,6 +228,7 @@
       (set! (.state hook) (f (.state hook))))))
 
 (defn set-state 
+  "Sets state stored on an object's ArcadiaHook"
   ([^Node node k ^System.Object value]
     (update-state node (fn [m] (assoc m k value))))
   ([^Node node ^System.Object value]
@@ -279,7 +283,8 @@
       (.Start t) t)))
 
 
-(defn play-sound 
+(defn play-sound
+  "Convenience fn to play an audio file, `(play-sound \"music/song1.ogg\")`"
   ([s] (play-sound s 0))
   ([s n]
     (let [audio (Godot.AudioStreamPlayer.)]
