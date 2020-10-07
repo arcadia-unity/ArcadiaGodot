@@ -8,7 +8,7 @@ ArcadiaGodot is alpha software, the API and installation methods will be subject
 
 Community
 ---------
-- [Gittr/IRC](https://gitter.im/arcadia-unity/Arcadia)
+- [Gitter/IRC](https://gitter.im/arcadia-unity/Arcadia)
 
 
 Setup
