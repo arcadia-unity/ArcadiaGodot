@@ -4,7 +4,7 @@ The integration of the Clojure Programming Language with the Godot game engine. 
 
 Status
 ------
-ArcadiaGodot is alpha software, the API and installation methods will be subject to change.  
+ArcadiaGodot is at a 1.0 release and the existing API should not change.
 
 Community
 ---------
