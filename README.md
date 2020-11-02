@@ -15,18 +15,44 @@ Setup
 ----------
 You'll need a version of [Godot with Mono](https://godotengine.org/download) and `MSBuild` (see the Requirements section on the download page).
 
-Clone this repository into your project folder.
-
-Edit the `{project}.csproj` file to include the following itemgroup.  You may have to run an initial `Build` in the Editor for this file to be generated.
+- Start Godot
+- Create new project
+- Create new scene
+- Attach new C# script which inherits from spatial and uses template default to scene
+- Save both the script and scene
+- Open `Project -> Export...`
+- Add export preset with button `Add...` at the top
+- Confirm export with button `Export Project` at bottom
+- `Build` button should be visible in top right corner of main window now
+- Clone `ArcadiaGodot` repo into project root
+- 
+- Add to `{project}.csproj`:
 
 ```xml
-  <ItemGroup>
-    <Compile Include="ArcadiaGodot/**/*.cs" />
-    <Reference Include="ArcadiaGodot/Infrastructure/**/*.dll"></Reference>
-  </ItemGroup>
+     <ItemGroup>
+       <Reference Include="ArcadiaGodot/Infrastructure/**/*.dll"></Reference>
+     </ItemGroup>
 ```
 
-Finally, you'll need at least one `ArcadiaHook.cs` script in your main scene.  You'll then be able to build (play button) and connect to one of the repls or reload `.clj` files that have changed.
+ File should look like this now:
+```xml
+   <Project Sdk="Godot.NET.Sdk/3.2.3">
+     <PropertyGroup>
+       <TargetFramework>net472</TargetFramework>
+     </PropertyGroup>
+     <ItemGroup>
+       <Reference Include="ArcadiaGodot/Infrastructure/**/*.dll"></Reference>
+     </ItemGroup>
+   </Project>
+```
+
+- Drag `ArcadiaGodot/ArcadiaHook.cs` onto the `Spatial` entry in scene list
+- Click on play button
+- Select main scene when prompted
+
+- Output should say "Arcadia loaded!"
+
+There should also be a message that says what directory is being watched for changes in `.clj` files and a couple more regarding the ports that the diverse repls are listening on.
 
 Usage
 -----
