@@ -17,11 +17,12 @@ You'll need a version of [Godot with Mono](https://godotengine.org/download) and
 
 Clone this repository into your project folder.
 
-Edit the `{project}.csproj` file to include the following itemgroup.  You may have to run an initial `Build` in the Editor for this file to be generated.
+In the Godot Editor, run the `Project > Tools > Mono > Create C# Solution` menu command.
+
+Edit the `{project}.csproj` file to include the following itemgroup.
 
 ```xml
   <ItemGroup>
-    <Compile Include="ArcadiaGodot/**/*.cs" />
     <Reference Include="ArcadiaGodot/Infrastructure/**/*.dll"></Reference>
   </ItemGroup>
 ```
