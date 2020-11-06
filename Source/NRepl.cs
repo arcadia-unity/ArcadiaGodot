@@ -521,6 +521,7 @@ namespace Arcadia
 			
 			running = true;
 			new Thread(() => {
+				Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
 				var listener = new TcpListener(IPAddress.Loopback, Port);
 				try
 				{
@@ -537,6 +538,7 @@ namespace Arcadia
 						var client = listener.AcceptTcpClient();
 						new Thread(() =>
 						{
+							Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
 							GD.Print("nrepl: connected to client ", client.Client.RemoteEndPoint);
 							var parser = new BencodeNET.Parsing.BencodeParser();
 							var clientRunning = true;
