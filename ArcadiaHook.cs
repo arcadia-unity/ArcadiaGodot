@@ -56,7 +56,7 @@ namespace Arcadia
                     RT.load("arcadia/internal/config");
                     if (RT.booleanCast(Util.Invoke(RT.var("arcadia.internal.config", "get-config-key"), "reload-on-change")))
                     {
-                        var watcher = new ArcadiaWatcher();
+                        var watcher = new CrossPlatformArcadiaWatcher(false);
                     }
                 }
                 GD.Print("Arcadia loaded!");
