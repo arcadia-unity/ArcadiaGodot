@@ -13,7 +13,7 @@ public class CrossPlatformArcadiaWatcher
     private System.Threading.Timer drain_timer;
 
     private Dictionary<string, bool> changed_files = new Dictionary<string, bool>();
-    private Dictionary<string, FileInfo> _lastFiles;
+    private Dictionary<string, FileInfo> last_files;
 
     private bool verbose_logging = false;
 
@@ -40,16 +40,16 @@ public class CrossPlatformArcadiaWatcher
             lookup.Add(name, fi);
         }
 
-        if (_lastFiles != null)
+        if (last_files != null)
         {
             foreach (var kv in lookup)
             {
                 var name = kv.Key;
                 var fi = kv.Value;
 
-                if (_lastFiles.ContainsKey(name))
+                if (last_files.ContainsKey(name))
                 {
-                    var changed = fi.LastWriteTime != _lastFiles[name].LastWriteTime;
+                    var changed = fi.LastWriteTime != last_files[name].LastWriteTime;
                     if (changed)
                     {
                         OnChanged(name);
@@ -58,7 +58,7 @@ public class CrossPlatformArcadiaWatcher
             }
         }
 
-        _lastFiles = lookup;
+        last_files = lookup;
     }
 
     private void OnChanged(string fileName)
