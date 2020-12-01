@@ -19,7 +19,7 @@
              max-slides
              floor-max-angle
              infinite-inertia?]
-      :or {floor-normal (v2)
+      :or {floor-normal (Vector2.)
            stop-on-slope? false
            max-slides 4
            floor-max-angle 0.785398
