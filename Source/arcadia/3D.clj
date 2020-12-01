@@ -9,6 +9,9 @@
   (.SetTranslation o v))
 
 (defn ^Vector3 move-and-slide
+  "Calls the `.MoveAndSlide` method on a `KinematicBody`.
+   This function exists because `(.MoveAndSlide ...)` requires
+   that all C# optional parameters are provided."
   [^KinematicBody o
    ^Vector3 v
    & {:keys [floor-normal

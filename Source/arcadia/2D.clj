@@ -9,6 +9,9 @@
   (.SetPosition node v))
 
 (defn ^Vector2 move-and-slide
+  "Calls the `.MoveAndSlide` method on a `KinematicBody2D`.
+   This function exists because `(.MoveAndSlide ...)` requires
+   that all C# optional parameters are provided."
   [^KinematicBody2D o
    ^Vector2 v
    & {:keys [floor-normal
