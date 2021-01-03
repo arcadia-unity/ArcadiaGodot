@@ -8,7 +8,7 @@ ArcadiaGodot is at a 1.0 release and the existing API should not change.
 
 Community
 ---------
-- [Gittr/IRC](https://gitter.im/arcadia-unity/Arcadia)
+- [Gitter/IRC](https://gitter.im/arcadia-unity/Arcadia)
 
 
 Setup
