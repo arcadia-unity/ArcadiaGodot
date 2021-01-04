@@ -67,6 +67,11 @@ namespace Arcadia
 		// ==================================================================
 		// Var invocation
 
+		public static object Invoke (Var v)
+		{
+			return ((IFn)v.getRawRoot()).invoke();
+		}
+
 		public static object Invoke (Var v, object a)
 		{
 			return ((IFn)v.getRawRoot()).invoke(a);
