@@ -9,14 +9,13 @@
 (defn ^Vector3 local-translation [^Spatial o]
   (.Translation o))
 
-(defn ^Vector3 translation! [^Spatial o ^Vector3 v]
-  (.SetTranslation o (.ToLocal o v)))
+(defn ^Vector3 translation! [ o ^Vector3 v]
+  (let [tx (.GetGlobalTransform o)]
+    (set! (.origin tx) v)
+    (.SetGlobalTransform o tx)))
 
 (defn ^Vector3 local-translation! [^Spatial o ^Vector3 v]
   (.SetTranslation o v))
-
-
-
 
 
 
