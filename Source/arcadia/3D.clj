@@ -2,11 +2,29 @@
   (:import 
     [Godot Node GD SceneTree Spatial Vector3 KinematicBody]))
 
+
 (defn ^Vector3 translation [^Spatial o]
+  (.origin (.GetGlobalTransform o)))
+
+(defn ^Vector3 local-translation [^Spatial o]
   (.Translation o))
 
 (defn ^Vector3 translation! [^Spatial o ^Vector3 v]
+  (.SetTranslation o (.ToLocal o v)))
+
+(defn ^Vector3 local-translation! [^Spatial o ^Vector3 v]
   (.SetTranslation o v))
+
+
+
+
+
+
+(defn ^Vector3 scale [^Spatial o]
+  (.Scale o))
+
+(defn ^Vector3 scale! [^Spatial o ^Vector3 v]
+  (set! (.Scale o) v))
 
 (defn ^Vector3 move-and-slide
   "Calls the `.MoveAndSlide` method on a `KinematicBody`.

@@ -43,14 +43,18 @@
   (.Root (Godot.Engine/GetMainLoop)))
 
 (defn get-node 
-  "Uses the global scene viewport Node, \"/root/etc\""
-  [s]
-  (.GetNode (.Root (Godot.Engine/GetMainLoop)) (node-path s)))
+  "Gets child of a node by path, or uses the global scene viewport Node if only 1 argument is given, \"/root/etc\""
+  ([s]
+   (get-node (root) s))
+  ([n s]
+    (.GetNode n (node-path s))))
 
 (defn find-node 
-  "Recursive find from global root, s is a wildcard string supporting * and ?"
-  [s]
-  (.FindNode (.Root (Godot.Engine/GetMainLoop)) s true false))
+  "Recursive find a descendant node , s is a name string supporting * and ? wildcards. Uses the global scene viewport Node if only 1 argument is given"
+  ([s]
+    (find-node (root) s))
+  ([n s]
+    (.FindNode n s true false)))
 
 (defn instance [pscn]
   "Instance a PackedScene"
