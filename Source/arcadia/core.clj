@@ -116,9 +116,10 @@
 (defonce ^:private adhoc-signals (AdhocSignals.))
 
 (defn ^:private _connect [^Node node ^String signal-name ^Godot.Object o f]
-  (.Register o (hash f) f)
-  (.Connect node signal-name o "CatchMethod" 
-    (Godot.Collections.Array. (into-array Object [(hash f)])) 0))
+  (let [guid (str (System.Guid/NewGuid))]
+    (.Register o guid f)
+    (.Connect node signal-name o "CatchMethod" 
+      (Godot.Collections.Array. (into-array Object [guid])) 0)))
 
 (defn connect
   "Connects a node's signal to a function. These connections share a Godot.Object 

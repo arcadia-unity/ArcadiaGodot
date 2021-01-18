@@ -8,6 +8,14 @@
 (defn ^Vector2 position! [^Node2D node ^Vector2 v]
   (.SetPosition node v))
 
+
+(defn ^Vector2 scale [^Node2D o]
+  (.Scale o))
+
+(defn ^Vector2 scale! [^Node2D o ^Vector2 v]
+  (set! (.Scale o) v))
+
+
 (defn ^Vector2 move-and-slide
   "Calls the `.MoveAndSlide` method on a `KinematicBody2D`.
    This function exists because `(.MoveAndSlide ...)` requires

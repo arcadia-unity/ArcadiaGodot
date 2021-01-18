@@ -18,9 +18,9 @@ public class AdhocSignals : Godot.Object
         o.AddUserSignal(name, arguments);
     }
 
-    public Dictionary<int, IFn> functions = new Dictionary<int, IFn>();
+    public Dictionary<string, IFn> functions = new Dictionary<string, IFn>();
 
-    public void Register(int hash, IFn f){
+    public void Register(string hash, IFn f){
         try
         {
             functions.Add(hash, f);
@@ -30,7 +30,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(int hash){
+    public void CatchMethod(string hash){
         try
         {
             functions[hash].invoke();
@@ -41,7 +41,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(System.Object a, int hash){
+    public void CatchMethod(System.Object a, string hash){
         try
         {
             functions[hash].invoke(a);
@@ -52,7 +52,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(System.Object a, System.Object b, int hash){
+    public void CatchMethod(System.Object a, System.Object b, string hash){
         try
         {
             functions[hash].invoke(a, b);
@@ -63,7 +63,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(System.Object a, System.Object b, System.Object c, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, string hash){
         try
         {
             functions[hash].invoke(a, b, c);
@@ -74,7 +74,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, string hash){
         try
         {
             functions[hash].invoke(a, b, c, d);
@@ -85,7 +85,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, string hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e);
@@ -96,7 +96,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, string hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f);
@@ -107,7 +107,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, string hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f, g);
@@ -118,7 +118,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, string hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f, g, h);
@@ -129,7 +129,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, System.Object i, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, System.Object i, string hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f, g, h, i);
@@ -140,7 +140,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, System.Object i, System.Object j, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, System.Object i, System.Object j, string hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f, g, h, i, j);
@@ -151,7 +151,7 @@ public class AdhocSignals : Godot.Object
         }
     }
 
-    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, System.Object i, System.Object j, System.Object k, int hash){
+    public void CatchMethod(System.Object a, System.Object b, System.Object c, System.Object d, System.Object e, System.Object f, System.Object g, System.Object h, System.Object i, System.Object j, System.Object k, string hash){
         try
         {
             functions[hash].invoke(a, b, c, d, e, f, g, h, i, j, k);
