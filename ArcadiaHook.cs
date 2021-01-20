@@ -72,6 +72,7 @@ namespace Arcadia
         private Dictionary<string, IFn> _enter_tree_fns = new Dictionary<string, IFn>();
         private Dictionary<string, IFn> _exit_tree_fns = new Dictionary<string, IFn>();
         private Dictionary<string, IFn> _ready_fns = new Dictionary<string, IFn>();
+        private Dictionary<string, IFn> _tree_ready_fns = new Dictionary<string, IFn>();
         private Dictionary<string, IFn> _process_fns = new Dictionary<string, IFn>();
         private Dictionary<string, IFn> _physics_process_fns = new Dictionary<string, IFn>();
         private Dictionary<string, IFn> _input_fns = new Dictionary<string, IFn>();
@@ -79,6 +80,8 @@ namespace Arcadia
 
         [Export]
         public string ready_fn = "";
+        [Export]
+        public string tree_ready_fn = "";
         [Export]
         public string enter_tree_fn = "";
         [Export]
@@ -96,6 +99,7 @@ namespace Arcadia
             _enter_tree_fns.Clear();
             _exit_tree_fns.Clear();
             _ready_fns.Clear();
+            _tree_ready_fns.Clear();
             _process_fns.Clear();
             _physics_process_fns.Clear();
             _input_fns.Clear();
@@ -113,6 +117,9 @@ namespace Arcadia
                     break;
                 case "_ready":
                     _ready_fns[k] = v;
+                    break;
+                case "_tree_ready":
+                    _tree_ready_fns[k] = v;
                     break;
                 case "_process":
                     _process_fns[k] = v;
@@ -150,6 +157,12 @@ namespace Arcadia
                     if (_ready_fns.ContainsKey(k))
                     {
                         _ready_fns.Remove(k);
+                    }
+                    break;
+                case "_tree_ready_fns":
+                    if (_tree_ready_fns.ContainsKey(k))
+                    {
+                        _tree_ready_fns.Remove(k);
                     }
                     break;
                 case "_process":
@@ -198,6 +211,7 @@ namespace Arcadia
             AddEditorHook("_enter_tree", enter_tree_fn);
             AddEditorHook("_exit_tree", exit_tree_fn);
             AddEditorHook("_ready", ready_fn);
+            AddEditorHook("_tree_ready", tree_ready_fn);
             AddEditorHook("_process", process_fn);
             AddEditorHook("_physics_process", physics_process_fn);
             AddEditorHook("_input", input_fn);
@@ -233,6 +247,22 @@ namespace Arcadia
         public override void _Ready()
         {
             foreach (var item in _ready_fns)
+            {
+                try
+                {
+                    item.Value.invoke(target, Keyword.intern(item.Key));
+                }
+                catch (Exception err)
+                {
+                    GD.PrintErr(err);
+                }     
+            }
+            CallDeferred("_TreeReady");
+        }
+
+        public void _TreeReady()
+        {
+            foreach (var item in _tree_ready_fns)
             {
                 try
                 {

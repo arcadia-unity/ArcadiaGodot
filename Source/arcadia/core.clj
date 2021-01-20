@@ -172,6 +172,7 @@
   :enter-tree "_enter_tree"
   :exit-tree "_exit_tree"
   :ready  "_ready"
+  :tree-ready "_tree_ready"
   :process "_process"
   :physics-process "_physics_process"
   :input "_input"

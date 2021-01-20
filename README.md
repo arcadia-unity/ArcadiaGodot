@@ -44,7 +44,7 @@ Note that these fns will be called with the *parent* of the `ArcadiaHook` instan
 
 ### Hooks
 
-You can hook functions to Godot nodes in clojure with `hook+` and `hook-`.  This has the same usage as `Arcadia`'s hooks. Godot's hook types are `:enter-tree :exit-tree :ready :process :physics-process :input :unhandled-input`.
+You can hook functions to Godot nodes in clojure with `hook+` and `hook-`.  This has the same usage as `Arcadia`'s hooks. Godot's hook types are `:enter-tree :exit-tree :ready :tree-ready :process :physics-process :input :unhandled-input`.
 
 ```clj
 ;add a anonymous hook function to the player's _Input method
