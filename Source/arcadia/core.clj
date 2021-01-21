@@ -280,12 +280,13 @@
     "
   ([object property initialVal finalVal duration] (tween object property initialVal finalVal duration {}))
   ([object property initialVal finalVal duration {:keys [transition easing delay callback]}]
-    (let [^System.Object t (Godot.Tween.)]
+    (let [^System.Object t (Godot.Tween.)
+          adhoc (AdhocSignals.)]
       (add-child (root) t)
       (.InterpolateProperty t object (Godot.NodePath. property) initialVal finalVal duration 
         (get tween-transition-enum transition 0)
         (get tween-ease-enum easing 2) (or delay 0))
-      (connect* t "tween_all_completed" (fn [] (if callback (callback)) (destroy t)))
+      (_connect t "tween_all_completed" adhoc (fn [] (if callback (callback)) (destroy t) (destroy adhoc)))
       (.Start t) t)))
 
 

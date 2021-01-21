@@ -2,7 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using clojure.lang;
 
-public class AdhocSignals : Godot.Object
+public class AdhocSignals : Godot.Node
 {
 
     public static void AddSignal(Godot.Object o, string name){
