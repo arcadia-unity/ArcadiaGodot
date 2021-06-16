@@ -5,8 +5,9 @@
     [Godot Node GD ResourceLoader 
       Node Node2D SceneTree Sprite Spatial]))
 
-(defn log [& args]
+(defn log
   "Log message to the Godot Editor console. Arguments are combined into a string."
+  [& args]
   (GD/Print (into-array (map #(str % " ") args))))
 
 (defn obj 
@@ -16,9 +17,28 @@
 
 (defn node-path [s] (Godot.NodePath. s))
 
-(defn tree [node] (.GetTree node))
+(defn ^Node root
+  "returns the root node"
+  []
+  (.Root (Godot.Engine/GetMainLoop)))
 
-(defn group! 
+(defn tree
+  "Return the SceneTree of `node`. If `node` isn't provided return the
+  SceneTree of the root node."
+  ([] (tree (root)))
+  ([node] (.GetTree node)))
+
+(defn call-group!
+  "Call `method` on each member of the given `group` in
+  `scene-tree`. `args` will be passed as arguments to the
+  `method`. `scene-tree` defaults to the root SceneTree if not
+  provieded."
+  ([group method args]
+   (call-group! (tree) group method args))
+  ([scene-tree group method args]
+   (.CallGroup scene-tree group method (to-array args))))
+
+(defn group!
   ([node s] (group! node s true))
   ([node s pers] (.AddToGroup node s pers)))
 
@@ -36,11 +56,6 @@
 (defn load-scene [s]
   (let [scene (ResourceLoader/Load (str "res://" s) "PackedScene" true)]
     scene))
-
-(defn ^Node root
-  "returns the root node"
-  []
-  (.Root (Godot.Engine/GetMainLoop)))
 
 (defn get-node 
   "Gets child of a node by path, or uses the global scene viewport Node if only 1 argument is given, \"/root/etc\""
