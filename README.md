@@ -72,6 +72,22 @@ For quick access try `telnet localhost 5571`.
 
 After building your project you'll need to manually compile your clojure namespaces into the build directory:
 
+#### Godot Headless compilation
+
+The easiest way to compile your Clojure files is to use the [Godot Headless
+Client](https://godotengine.org/download/server) and running the following
+command in your project's root directory.
+
+```bash
+godot3-headless -d ArcadiaGodot/Compiler.tscn --src "." --target my/export/directory
+```
+
+This will look for any Clojure files in the `--src` directory and output them
+into the `--target` directory (the directory you chose to export your project
+into.
+
+#### Manual compilation
+
 ```
 (require 'arcadia.internal.compiler)
 (arcadia.internal.compiler/aot "export/dlls" ['selfsame.core])
