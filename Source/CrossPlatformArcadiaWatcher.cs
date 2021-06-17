@@ -11,7 +11,7 @@ public class CrossPlatformArcadiaWatcher
     private Dictionary<string, bool> file_busy = new Dictionary<string, bool>();
     private FileSystemWatcher watcher;
 
-    public CrossPlatformArcadiaWatcher(bool verbose)
+    public CrossPlatformArcadiaWatcher()
     {
         var path = ProjectSettings.GlobalizePath("res://");
         var watcher = new FileSystemWatcher(path);
@@ -98,7 +98,7 @@ public class CrossPlatformArcadiaWatcher
             file_busy[RelativePath] = true;
             this.reload(RelativePath);
         }
-        catch
+        catch (System.Exception e)
         {
             GD.PrintErr(e);
         }
