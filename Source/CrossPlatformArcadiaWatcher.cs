@@ -1,9 +1,10 @@
-using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Threading;
-using clojure.lang;
 using Godot;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System;
+using clojure.lang;
 
 public class CrossPlatformArcadiaWatcher
 {
@@ -37,6 +38,11 @@ public class CrossPlatformArcadiaWatcher
         return ea.FullPath.Replace(path, "");
     }
 
+    static bool ValidClojureFile(string RelativePath) {
+        Regex rgx = new Regex(@"^[A-z_/]*.clj$");
+        return rgx.IsMatch(RelativePath);
+    }
+
     private void ReadFileTimeout(string RelativePath){
         // We use `file_busy[RelativePath]` variable to deterime if a file is
         // being reloaded. We add a short delay setting it back to `false` in
@@ -68,14 +74,21 @@ public class CrossPlatformArcadiaWatcher
             {
                 var RelativePath = ToRelativePath(ea);
 
+                if(!ValidClojureFile(RelativePath))
+                {
+                    return;
+                }
+
                 // FileSystemWatcher considers all files initially found as "Changed".
                 // That's why we skip them if they aren't in `file_busy`.
-                if (!file_busy.ContainsKey(RelativePath)){
+                if (!file_busy.ContainsKey(RelativePath))
+                {
                     file_busy[RelativePath] = false;
                     return;
                 }
 
-                if(file_busy[RelativePath]){
+                if(file_busy[RelativePath])
+                {
                     return;
                 }
 
@@ -95,8 +108,11 @@ public class CrossPlatformArcadiaWatcher
         try
         {
             var RelativePath = ToRelativePath(ea);
-            file_busy[RelativePath] = true;
-            this.reload(RelativePath);
+            if(ValidClojureFile(RelativePath))
+            {
+                file_busy[RelativePath] = true;
+                this.reload(RelativePath);
+            }
         }
         catch (System.Exception e)
         {
