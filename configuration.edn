@@ -9,5 +9,8 @@
  ;; TODO
  :nrepl-auto-completion false
 
+ ;; Source paths for Clojure files to include
+ :source-paths ["src"]
+
  ;; enables filewatcher to reload .clj files when changed
  :reload-on-change true}
