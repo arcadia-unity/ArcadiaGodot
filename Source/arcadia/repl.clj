@@ -297,8 +297,8 @@
 
 (defn load-all-clj-files []
   (let [files
-        (->> (:source-paths arcadia.internal.config/config "src")
-             (mapcat #(System.IO.Directory/GetFiles %, "*.clj", SearchOption/AllDirectories))
+        (->> (:source-paths arcadia.internal.config/config ["src"])
+             (mapcat #(System.IO.Directory/GetFiles % "*.clj" SearchOption/AllDirectories))
              (set))]
     (doseq [file files]
       (try
