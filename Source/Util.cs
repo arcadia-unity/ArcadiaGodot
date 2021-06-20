@@ -1,3 +1,4 @@
+using Godot;
 using System;
 using clojure.lang;
 using System.Collections.Generic;
@@ -6,6 +7,9 @@ namespace Arcadia
 {
 	public class Util
 	{
+            public static ResourceSaver.SaverFlags FLAG_RELATIVE_PATHS (){
+                return (ResourceSaver.SaverFlags) 1;
+            }
 
 		public static ArcadiaHook GetHook(Godot.Node o){
 			for (int i = 0; i < o.GetChildCount(); i++)

@@ -50,6 +50,7 @@ namespace Arcadia
                 SetClojureLoadPathWithDLLs();
                 RT.load("clojure/core");
                 RT.load("arcadia/internal/namespace");
+                RT.load("arcadia/internal/hook");
                 if (OS.IsDebugBuild()) {
                     RT.load("arcadia/repl");
                     Util.Invoke(RT.var("arcadia.repl", "launch"), null);
@@ -225,7 +226,7 @@ namespace Arcadia
                 catch (Exception err)
                 {
                     GD.PrintErr(err);
-                }     
+                }
             }
         }
 

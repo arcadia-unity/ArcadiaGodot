@@ -1,21 +1,22 @@
 (ns arcadia.repl
   (:refer-clojure :exclude [with-bindings])
   (:require 
-    [arcadia.core]
-    [arcadia.internal.config]
-    [clojure.main :as m]
-    [clojure.string :as str]
-    ;[clojure.pprint :as pprint]
-    [clojure.core.server :as s])
+   [arcadia.core]
+   [arcadia.internal.config]
+   [clojure.main :as m]
+   [clojure.string :as str]
+   ;; [clojure.pprint :as pprint]
+   [clojure.core.server :as s]
+   [arcadia.internal.hook])
   (:import
-    [Godot GD]
-    [System.IO EndOfStreamException]
-    [System.Collections Queue]
-    [System.Net IPEndPoint IPAddress]
-    [System.Net.Sockets UdpClient SocketException SocketError]
-    [System.Threading Thread ThreadStart]
-    [System.Text Encoding]
-    [Arcadia NRepl]))
+   [Godot GD]
+   [System.IO EndOfStreamException]
+   [System.Collections Queue]
+   [System.Net IPEndPoint IPAddress]
+   [System.Net.Sockets UdpClient SocketException SocketError]
+   [System.Threading Thread ThreadStart]
+   [System.Text Encoding]
+   [Arcadia NRepl]))
 
 (defn log [& args]
   "Log message to the Godot Editor console. Arguments are combined into a string."
@@ -27,7 +28,9 @@
   (arcadia.core/timeout 0.0001 f))
 
 (defn main-thread-load-path [s]
-  (main-thread (fn [] (load-file s))))
+  (main-thread (fn []
+                 (load-file s)
+                 (arcadia.internal.hook/reload s))))
 
 (defn main-thread-eval [s]
   (main-thread (fn [] (eval s))))
@@ -292,7 +295,19 @@
        (merge server-defaults opts))
      (catch Exception e (GD/Print (str e))))))
 
+(defn load-all-clj-files []
+  (let [files
+        (->> (:source-paths arcadia.internal.config/config "src")
+             (mapcat #(System.IO.Directory/GetFiles %, "*.clj", SearchOption/AllDirectories))
+             (set))]
+    (doseq [file files]
+      (try
+        (load-file file)
+        (arcadia.internal.hook/reload file)
+        (catch Exception _ nil)))))
+
 (defn launch [_]
+  (load-all-clj-files)
   (when-let [port (:socket-repl arcadia.internal.config/config)]
     (log "socket-repl: starting on port " port)
     (start-socket-server {:port port}))
