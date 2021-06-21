@@ -295,6 +295,7 @@
      (catch Exception e (GD/Print (str e))))))
 
 (defn launch [_]
+  (arcadia.internal.variables/set-variables-edn!)
   (arcadia.internal.variables/generate-variables!)
   (arcadia.internal.variables/connect-variables!)
   (when-let [port (:socket-repl arcadia.internal.config/config)]
