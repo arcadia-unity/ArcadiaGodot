@@ -1,12 +1,14 @@
 (ns arcadia.repl
   (:refer-clojure :exclude [with-bindings])
   (:require 
-    [arcadia.core]
-    [arcadia.internal.config]
-    [clojure.main :as m]
-    [clojure.string :as str]
-    ;[clojure.pprint :as pprint]
-    [clojure.core.server :as s])
+   [arcadia.core]
+   [arcadia.internal.config]
+   [arcadia.internal.variables]
+   [clojure.main :as m]
+   [clojure.string :as str]
+   ;; [clojure.pprint :as pprint]
+   [clojure.core.server :as s]
+   [arcadia.internal.hook])
   (:import
     [Godot GD]
     [System.IO EndOfStreamException]
@@ -293,6 +295,8 @@
      (catch Exception e (GD/Print (str e))))))
 
 (defn launch [_]
+  (arcadia.internal.variables/generate-variables!)
+  (arcadia.internal.variables/connect-variables!)
   (when-let [port (:socket-repl arcadia.internal.config/config)]
     (log "socket-repl: starting on port " port)
     (start-socket-server {:port port}))
