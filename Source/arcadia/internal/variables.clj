@@ -74,5 +74,5 @@
   (when-let [vars (get (read-variables-edn) (.Filename self))]
     (doseq [[k _] vars]
       (let [v (.Get self (string/replace (name k) #"-" "_"))]
-        (update-state self #(assoc % k v)))))
+        (update-state self #(cond-> % (not (k %)) (assoc k v))))))
   self)
