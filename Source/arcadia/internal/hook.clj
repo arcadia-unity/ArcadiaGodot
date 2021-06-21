@@ -3,10 +3,9 @@
    [clojure.edn :as edn])
   (:use arcadia.core))
 
-(defn- arcadia-hook-instance []
+(defn- arcadia-hook-packed-scene []
   (-> "res://ArcadiaGodot/ArcadiaHook.tscn"
-      (Godot.ResourceLoader/Load "PackedScene" true)
-      (.Instance 0)))
+      (Godot.ResourceLoader/Load "PackedScene" false)))
 
 (defn- get-arcadia-hook [node]
   (->> node
@@ -36,11 +35,12 @@
   (set! (.-unhandled_input_fn node) (get hooks :hook/unhandled-input "")))
 
 (defn add-hook-script! [scene hooks]
-  (when-not (Godot.ResourceLoader/Load scene "PackedScene" true)
+  (when-not (Godot.ResourceLoader/Load scene "PackedScene" false)
     (throw (ex-info (str "Resource " scene " not found while trying to apply hooks") {:scene scene :hooks hooks})))
-  (let [resource (Godot.ResourceLoader/Load scene "PackedScene" true)
+  (let [resource (Godot.ResourceLoader/Load scene "PackedScene" false)
         resource-instance (.Instance resource 0)
-        arcadia-hook (arcadia-hook-instance)
+        packed-scene (arcadia-hook-packed-scene)
+        arcadia-hook (.Instance packed-scene 0)
         packed-scene (Godot.PackedScene.)]
     (when-not (equal-hooks? (get-arcadia-hook resource-instance) hooks)
       (when-let [arcadia-hook (get-arcadia-hook resource-instance)]
