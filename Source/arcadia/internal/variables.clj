@@ -74,9 +74,8 @@
         (.Pack packed-scene scene-instance)
         (Godot.ResourceSaver/Save scene-file packed-scene (Arcadia.Util/FLAG_RELATIVE_PATHS))))))
 
-(defn set-variable-state [self]
+(defn set-variable-state! [self]
   (when-let [vars (get variable-state (.Filename self))]
     (doseq [[k _] vars]
       (let [v (.Get self (string/replace (name k) #"-" "_"))]
-        (update-state self #(cond-> % (not (k %)) (assoc k v))))))
-  self)
+        (update-state self #(cond-> % (not (k %)) (assoc k v)))))))
