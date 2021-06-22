@@ -78,4 +78,4 @@
   (when-let [vars (get variable-state (.Filename self))]
     (doseq [[k _] vars]
       (let [v (.Get self (string/replace (name k) #"-" "_"))]
-        (update-state self #(cond-> % (not (k %)) (assoc k v)))))))
+        (update-state self #(assoc % k v))))))
