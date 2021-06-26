@@ -33,9 +33,11 @@
 (defn aot [path ns-syms]
   "aot ns-syms to the given path, with all dependencies"
   (Arcadia.Boot/SetClojureLoadPath)
+  (Arcadia.Boot/AddSourcePaths)
   (aot-namespaces path (concat ns-syms [
     'clojure.core
     'clojure.core.server
     'arcadia.internal.namespace
     'arcadia.repl]))
-  (Arcadia.Boot/SetClojureLoadPathWithDLLs))
+  (Arcadia.Boot/SetClojureLoadPathWithDLLs)
+  (Arcadia.Boot/AddSourcePaths))

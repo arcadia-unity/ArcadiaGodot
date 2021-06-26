@@ -18,26 +18,35 @@ namespace Arcadia
             System.Environment.SetEnvironmentVariable("clojure.spec.skip-macros", "true");
         }
 
+        public static void AddSourcePaths()
+        {
+            var env = System.Environment.GetEnvironmentVariable("CLOJURE_LOAD_PATH");
+            var SourcePaths = Util.Invoke(RT.var("arcadia.internal.config", "get-config-key"), "source-paths");
+            foreach(string SourcePath in RT.toArray(SourcePaths))
+            {
+                env = env + Path.PathSeparator + Path.Combine(System.IO.Directory.GetCurrentDirectory(), SourcePath);
+            }
+            System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", env);
+        }
+
         public static void SetClojureLoadPath()
         {
-            System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
-                System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+
+            System.Environment.SetEnvironmentVariable(
+                "CLOJURE_LOAD_PATH",
+                Path.Combine(System.IO.Directory.GetCurrentDirectory(), "ArcadiaGodot", "Source") +
                 Path.PathSeparator+
-                System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Clojure"+
-                Path.PathSeparator+
-                System.IO.Directory.GetCurrentDirectory());        
+                Path.Combine(System.IO.Directory.GetCurrentDirectory(), "ArcadiaGodot", "Clojure"));
         }
 
         public static void SetClojureLoadPathWithDLLs()
         {
-            System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", 
-                System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Source"+Path.DirectorySeparatorChar+
-                Path.PathSeparator+
-                System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"ArcadiaGodot"+Path.DirectorySeparatorChar+"Infrastructure"+
-                Path.PathSeparator+
-                System.IO.Directory.GetCurrentDirectory()+Path.DirectorySeparatorChar+"dlls"+
-                Path.PathSeparator+
-                System.IO.Directory.GetCurrentDirectory());        
+            System.Environment.SetEnvironmentVariable(
+                "CLOJURE_LOAD_PATH",
+                Path.Combine(System.IO.Directory.GetCurrentDirectory(), "ArcadiaGodot", "Source") +
+                Path.PathSeparator +
+                Path.Combine(System.IO.Directory.GetCurrentDirectory(), "ArcadiaGodot", "Clojure") +
+                Path.PathSeparator +
+                Path.Combine(System.IO.Directory.GetCurrentDirectory(), "dlls"));
         }
 
         public static void Initialize()
@@ -54,6 +63,7 @@ namespace Arcadia
                     RT.load("arcadia/repl");
                     Util.Invoke(RT.var("arcadia.repl", "launch"), null);
                     RT.load("arcadia/internal/config");
+                    AddSourcePaths();
                     if (RT.booleanCast(Util.Invoke(RT.var("arcadia.internal.config", "get-config-key"), "reload-on-change")))
                     {
                         var watcher = new CrossPlatformArcadiaWatcher(false);
