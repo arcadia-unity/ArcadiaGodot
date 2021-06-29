@@ -3,7 +3,8 @@
    arcadia.core)
   (:require
    [clojure.string :as string]
-   [arcadia.internal.config :as config])
+   [arcadia.internal.config :as config]
+   [clojure.edn :as edn])
   (:import
    [Arcadia.Boot]))
 
@@ -54,25 +55,23 @@
     (copy-infrastructure! dlls-dir)
     (aot dlls-dir namespaces)))
 
+(defn- file-namespace [file]
+  (-> file (slurp :enc "utf-8") edn/read-string second symbol))
+
 (defn- clojure-namespaces [source-paths]
   (for [src source-paths
         file (System.IO.Directory/GetFiles src "*.clj", SearchOption/AllDirectories)
         :when (not (string/includes? file "ArcadiaGodot"))]
-    (-> file
-        (subs (inc (count src)))
-        (string/replace #"\/" ".")
-        (string/replace #"\.clj$" "")
-        (string/replace #"_" "-")
-        (symbol))))
+    (file-namespace file)))
 
-(defn- compile []
+(defn- compile-from-configuration []
   (let [source-paths (get config/config :source-paths [])
         target-path  (get config/config :target-path [])]
     (compile-project! target-path (clojure-namespaces source-paths))))
 
 (defn ready [_ _]
   (try
-    (compile)
+    (compile-from-configuration)
     (.Quit (arcadia.core/tree) 0)
     (catch Exception e
       (println "ERROR: Compilation failure!")
