@@ -2,7 +2,6 @@
   (:use
    arcadia.core)
   (:require
-   [arcadia.internal.cmd :as cmd]
    [clojure.string :as string]
    [arcadia.internal.config :as config])
   (:import
@@ -35,11 +34,13 @@
   "aot ns-syms to the given path, with all dependencies"
   [path ns-syms]
   (Arcadia.Boot/SetClojureLoadPath)
+  (Arcadia.Boot/AddSourcePaths)
   (aot-namespaces path (concat ns-syms ['clojure.core
                                         'clojure.core.server
                                         'arcadia.internal.namespace
                                         'arcadia.repl]))
-  (Arcadia.Boot/SetClojureLoadPathWithDLLs))
+  (Arcadia.Boot/SetClojureLoadPathWithDLLs)
+  (Arcadia.Boot/AddSourcePaths))
 
 (defn- copy-infrastructure! [dlls-dir]
   (doseq [file (System.IO.Directory/GetFiles "ArcadiaGodot/Infrastructure")
@@ -53,23 +54,9 @@
     (copy-infrastructure! dlls-dir)
     (aot dlls-dir namespaces)))
 
-(defn- cleanup-cmdline-args [cmdline-args]
-  (let [current (:current cmdline-args)]
-    (cond-> cmdline-args
-      current (update :flags conj (keyword current))
-      true (dissoc :current))))
-
-(defn- cmdline-args []
-  (-> (vec (Godot.OS/GetCmdlineArgs))
-      (cmd/parse-opts)
-      (cleanup-cmdline-args)))
-
-(defn- return-argument-error []
-  (println "ERROR: --src <PATH> and --target <PATH> required")
-  (.Quit (arcadia.core/tree) 1))
-
-(defn- clojure-namespaces [src]
-  (for [file (System.IO.Directory/GetFiles src "*.clj", SearchOption/AllDirectories)
+(defn- clojure-namespaces [source-paths]
+  (for [src source-paths
+        file (System.IO.Directory/GetFiles src "*.clj", SearchOption/AllDirectories)
         :when (not (string/includes? file "ArcadiaGodot"))]
     (-> file
         (subs (inc (count src)))
@@ -78,17 +65,15 @@
         (string/replace #"_" "-")
         (symbol))))
 
-(defn- compile-and-exit [{:keys [target src]}]
-  (compile-project! target (clojure-namespaces src))
-  (.Quit (arcadia.core/tree) 0))
+(defn- compile []
+  (let [source-paths (get config/config :source-paths [])
+        target-path  (get config/config :target-path [])]
+    (compile-project! target-path (clojure-namespaces source-paths))))
 
 (defn ready [_ _]
   (try
-    (let [{:keys [pairs]} (cmdline-args)]
-      (if (and (:src pairs)
-               (:target pairs))
-        (compile-and-exit pairs)
-        (return-argument-error)))
+    (compile)
+    (.Quit (arcadia.core/tree) 0)
     (catch Exception e
       (println "ERROR: Compilation failure!")
       (println e)

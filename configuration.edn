@@ -9,5 +9,11 @@
  ;; TODO
  :nrepl-auto-completion false
 
+ ;; Source paths for Clojure files to include
+ :source-paths ["src"]
+
+ ;; Target path for compiling clojure to dlls
+ :target-path "target"
+
  ;; enables filewatcher to reload .clj files when changed
  :reload-on-change true}
