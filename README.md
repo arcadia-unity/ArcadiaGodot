@@ -74,17 +74,15 @@ After building your project you'll need to manually compile your clojure namespa
 
 #### Godot Headless compilation
 
-The easiest way to compile your Clojure files is to use the [Godot Headless
-Client](https://godotengine.org/download/server) and running the following
-command in your project's root directory.
+The easiest way to compile your Clojure files is to use the `Compiler.tscn`
+scene, either through the command-line or through the Godot editor. This will
+look at the `:source-paths` and `:target-path` keywords in your
+`configuration.edn` file. These default to `["src"]` and `"target"`
+respectively.
 
 ```bash
-godot3-headless -d ArcadiaGodot/Compiler.tscn --src "." --target my/export/directory
+godot3 -d ArcadiaGodot/Compiler.tscn
 ```
-
-This will look for any Clojure files in the `--src` directory and output them
-into the `--target` directory (the directory you chose to export your project
-into.
 
 #### Manual compilation
 
