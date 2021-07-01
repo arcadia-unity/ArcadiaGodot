@@ -244,7 +244,7 @@ namespace Arcadia
 				Var.pushThreadBindings(evalBindings);
 				try {
 					var form = readStringVar.invoke(readStringOptions, code);
-					var result = Arcadia.Util.Invoke(RT.var("arcadia.repl", "main-thread-eval"), form);
+					var result = evalVar.invoke(form);
 					var value = (string)prStrVar.invoke(result);
 
 					star3Var.set(star2Var.deref());
