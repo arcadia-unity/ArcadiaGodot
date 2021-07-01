@@ -1,109 +1,122 @@
-using System.IO;
-using System.Collections.Generic;
-using System.Threading;
-using clojure.lang;
 using Godot;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System;
+using clojure.lang;
 
 public class CrossPlatformArcadiaWatcher
 {
-    // Polls the FS
-    private System.Threading.Timer poll_timer;
+    private static readonly object reload_lock = new object();
+    private Dictionary<string, bool> file_busy = new Dictionary<string, bool>();
+    private FileSystemWatcher watcher;
 
-    // Reloads files
-    private System.Threading.Timer drain_timer;
-
-    private Dictionary<string, bool> changed_files = new Dictionary<string, bool>();
-    private Dictionary<string, FileInfo> last_files;
-
-    private bool verbose_logging = false;
-
-    public CrossPlatformArcadiaWatcher(bool verbose)
-    {
-        this.verbose_logging = verbose;
-        poll_timer = new System.Threading.Timer(CheckStatus, new AutoResetEvent(false), 100, 100);
-        drain_timer = new System.Threading.Timer(DrainChanges, new AutoResetEvent(false), 100, 100);
-    }
-
-    private void CheckStatus(System.Object stateInfo)
+    public CrossPlatformArcadiaWatcher()
     {
         var path = ProjectSettings.GlobalizePath("res://");
-        if (verbose_logging) { GD.Print($"Polling clj files in {path}..."); }
-        var di = new DirectoryInfo(path);
-        var files = di.GetFiles("*.clj?", SearchOption.AllDirectories);
+        var watcher = new FileSystemWatcher(path);
 
-        // First time checking, nothing to compare against.
-        var lookup = new Dictionary<string, FileInfo>();
-        foreach (var fi in files)
-        {
-            var name = fi.FullName.Replace(path, "");
-            if (verbose_logging) { GD.Print("Scanning " + name); }
-            lookup.Add(name, fi);
-        }
+        this.watcher = watcher;
 
-        if (last_files != null)
-        {
-            foreach (var kv in lookup)
-            {
-                var name = kv.Key;
-                var fi = kv.Value;
+        watcher.NotifyFilter = NotifyFilters.CreationTime
+            | NotifyFilters.DirectoryName
+            | NotifyFilters.FileName
+            | NotifyFilters.LastWrite
+            | NotifyFilters.Size;
 
-                if (last_files.ContainsKey(name))
-                {
-                    var changed = fi.LastWriteTime != last_files[name].LastWriteTime;
-                    if (changed)
-                    {
-                        OnChanged(name);
-                    }
-                }
-            }
-        }
+        watcher.Changed += OnChanged;
+        watcher.Created += OnCreated;
 
-        last_files = lookup;
+        watcher.Filter = "*.clj";
+        watcher.IncludeSubdirectories = true;
+        watcher.EnableRaisingEvents = true;
     }
 
-    private void OnChanged(string fileName)
+    static string ToRelativePath(FileSystemEventArgs ea){
+        var path = ProjectSettings.GlobalizePath("res://");
+        return ea.FullPath.Replace(path, "");
+    }
+
+    static bool ValidClojureFile(string RelativePath) {
+        Regex rgx = new Regex(@"^[A-z_/]*.clj$");
+        return rgx.IsMatch(RelativePath);
+    }
+
+    private void ReadFileTimeout(string RelativePath){
+        // We use `file_busy[RelativePath]` variable to deterime if a file is
+        // being reloaded. We add a short delay setting it back to `false` in
+        // order to prevent any duplicate reloads, since
+        // `Arcadia.Util.Invoke(ReplVar, RelativePath)` seems to trigger
+        // `Changed` events.
+        System.Threading.Timer timer = null;
+        timer = new System.Threading.Timer((obj) =>
+        {
+            file_busy[RelativePath] = false;
+            timer.Dispose();
+        },
+            null, 50, System.Threading.Timeout.Infinite);
+    }
+
+    private void reload(string RelativePath){
+        GD.Print("reloading ", RelativePath);
+        file_busy[RelativePath] = true;
+        var ReplVar = RT.var("arcadia.repl", "main-thread-load-path");
+        Arcadia.Util.Invoke(ReplVar, RelativePath);
+        this.ReadFileTimeout(RelativePath);
+    }
+
+    private void OnChanged(object sender, FileSystemEventArgs ea)
     {
-        GD.Print("Detected change in file " + fileName);
         try
         {
-            lock (changed_files)
+            lock (reload_lock)
             {
-                changed_files[fileName] = true;
-            }
-        }
-        catch (System.Exception err)
-        {
-            GD.PrintErr(err);
-        }
-        finally
-        {
+                var RelativePath = ToRelativePath(ea);
 
+                if(!ValidClojureFile(RelativePath))
+                {
+                    return;
+                }
+
+                // FileSystemWatcher considers all files initially found as "Changed".
+                // That's why we skip them if they aren't in `file_busy`.
+                if (!file_busy.ContainsKey(RelativePath))
+                {
+                    file_busy[RelativePath] = false;
+                    return;
+                }
+
+                if(file_busy[RelativePath])
+                {
+                    return;
+                }
+
+                this.reload(RelativePath);
+            }
+
+        }
+        catch (System.Exception e)
+        {
+            GD.PrintErr(e);
         }
     }
 
-    private void DrainChanges(System.Object stateInfo)
+    private void OnCreated(object sender, FileSystemEventArgs ea)
     {
-        lock (changed_files)
+
+        try
         {
-            foreach (var path in changed_files.Keys)
+            var RelativePath = ToRelativePath(ea);
+            if(ValidClojureFile(RelativePath))
             {
-
-                if (path != null)
-                {
-                    GD.Print("reloading ", path);
-                    try
-                    {
-                        Arcadia.Util.Invoke(RT.var("arcadia.repl", "main-thread-load-path"), path);
-                    }
-                    catch (System.Exception e)
-                    {
-                        GD.PrintErr(e);
-                    }
-
-                }
-
+                file_busy[RelativePath] = true;
+                this.reload(RelativePath);
             }
-            changed_files.Clear();
+        }
+        catch (System.Exception e)
+        {
+            GD.PrintErr(e);
         }
     }
 }

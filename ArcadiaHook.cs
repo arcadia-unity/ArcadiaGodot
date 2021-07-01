@@ -66,7 +66,11 @@ namespace Arcadia
                     AddSourcePaths();
                     if (RT.booleanCast(Util.Invoke(RT.var("arcadia.internal.config", "get-config-key"), "reload-on-change")))
                     {
-                        var watcher = new CrossPlatformArcadiaWatcher(false);
+                        if (System.Environment.OSVersion.Platform == System.PlatformID.MacOSX){
+                            var watcher = new MacOSArcadiaWatcher(false);
+                        } else {
+                            var watcher = new CrossPlatformArcadiaWatcher();
+                        }
                     }
                 }
                 GD.Print("Arcadia loaded!");
@@ -235,7 +239,7 @@ namespace Arcadia
                 catch (Exception err)
                 {
                     GD.PrintErr(err);
-                }     
+                }
             }
         }
 
