@@ -72,6 +72,20 @@ For quick access try `telnet localhost 5571`.
 
 After building your project you'll need to manually compile your clojure namespaces into the build directory:
 
+#### Godot Headless compilation
+
+The easiest way to compile your Clojure files is to use the `Compiler.tscn`
+scene, either through the command-line or through the Godot editor. This will
+look at the `:source-paths` and `:target-path` keywords in your
+`configuration.edn` file. These default to `["src"]` and `"target"`
+respectively.
+
+```bash
+godot3 -d ArcadiaGodot/Compiler.tscn
+```
+
+#### Manual compilation
+
 ```
 (require 'arcadia.internal.compiler)
 (arcadia.internal.compiler/aot "export/dlls" ['selfsame.core])
