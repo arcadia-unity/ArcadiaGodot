@@ -9,13 +9,14 @@
     [clojure.core.server :as s])
   (:import
     [Godot GD]
-    [System.IO EndOfStreamException]
+    [System.IO EndOfStreamException FileInfo]
     [System.Collections Queue]
     [System.Net IPEndPoint IPAddress]
     [System.Net.Sockets UdpClient SocketException SocketError]
     [System.Threading Thread ThreadStart]
     [System.Text Encoding]
-    [Arcadia NRepl]))
+    [Arcadia Util NRepl]
+   ))
 
 (defn log [& args]
   "Log message to the Godot Editor console. Arguments are combined into a string."
@@ -27,7 +28,10 @@
   (arcadia.core/timeout 0.0001 f))
 
 (defn main-thread-load-path [s]
-  (main-thread (fn [] (load-file s))))
+  (main-thread (fn [] 
+                 (let [file (FileInfo. s)]
+                   (magic.api/runtime-load-file file s)) ; use explisitly to avoid confusion with original load-file signature
+                 )))
 
 (defn main-thread-eval [s]
   (main-thread (fn [] (eval s))))
@@ -293,10 +297,10 @@
      (catch Exception e (GD/Print (str e))))))
 
 (defn launch [_]
-  (when-let [port (:socket-repl arcadia.internal.config/config)]
+  (when-let [port (:socket-repl (arcadia.internal.config/get-config))]
     (log "socket-repl: starting on port " port)
     (start-socket-server {:port port}))
-  (when-let [port (:udp-repl arcadia.internal.config/config)]
+  (when-let [port (:udp-repl (arcadia.internal.config/get-config))]
     (start-server port))
-  (when-let [port (:nrepl arcadia.internal.config/config)]
+  (when-let [port (:nrepl (arcadia.internal.config/get-config))]
     (Arcadia.NRepl/StartServer port)))

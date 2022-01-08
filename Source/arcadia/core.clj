@@ -1,9 +1,10 @@
 (ns arcadia.core
   (:require
     clojure.string)
-  (:import 
-    [Godot Node GD ResourceLoader 
-      Node Node2D SceneTree Sprite Spatial]))
+  (:import
+   [Godot AudioStream Texture Viewport Node GD ResourceLoader PackedScene
+    Node Node2D SceneTree Sprite Spatial]
+   [Arcadia ArcadiaHook GodotHelpers]))
 
 (defn log
   "Log message to the Godot Editor console. Arguments are combined into a string."
@@ -17,10 +18,10 @@
 
 (defn node-path [s] (Godot.NodePath. s))
 
-(defn ^Node root
+(defn ^Viewport root
   "returns the root node"
   []
-  (.Root (Godot.Engine/GetMainLoop)))
+  (.Root ^SceneTree (Godot.Engine/GetMainLoop)))
 
 (defn tree
   "Return the SceneTree of `node`. If `node` isn't provided return the
@@ -50,12 +51,12 @@
 
 (defn change-scene
   "Changes the root scene to the one at the given path"
-  [s]
-  (.ChangeScene (Godot.Engine/GetMainLoop) (str "res://" s)))
+  [s] 
+  (.ChangeScene ^SceneTree (Godot.Engine/GetMainLoop) (str "res://" s)))
 
-(defn load-scene [s]
-  (let [scene (ResourceLoader/Load (str "res://" s) "PackedScene" true)]
-    scene))
+(defn ^AudioStream load-audio [^String s] (GodotHelpers/LoadAudio s))
+(defn ^PackedScene load-scene [^String s] (GodotHelpers/LoadScene s))
+(defn ^Texture load-texture [^String s] (GodotHelpers/LoadTexture s))
 
 (defn get-node 
   "Gets child of a node by path, or uses the global scene viewport Node if only 1 argument is given, \"/root/etc\""
@@ -71,9 +72,9 @@
   ([n s]
     (.FindNode n s true false)))
 
-(defn instance [pscn]
+(defn ^Node instance [^PackedScene pscn] 
   "Instance a PackedScene"
-  (.Instance pscn 0))
+  (GodotHelpers/Instance pscn))
 
 (defn add-child [^Node node ^Node child]
   (.AddChild node child true))
@@ -130,7 +131,7 @@
 
 (defonce ^:private adhoc-signals (AdhocSignals.))
 
-(defn ^:private _connect [^Node node ^String signal-name ^Godot.Object o f]
+(defn ^:private _connect [^Godot.Object node ^String signal-name ^Godot.Object o f]
   (let [guid (str (System.Guid/NewGuid))]
     (.Register o guid f)
     (.Connect node signal-name o "CatchMethod" 
@@ -139,7 +140,7 @@
 (defn connect
   "Connects a node's signal to a function. These connections share a Godot.Object 
    instance and only one connection can be made for each node's signal."
-  [^Node node ^String signal-name f]
+  [^Godot.Object node ^String signal-name f]
   (_connect node signal-name adhoc-signals f))
 
 (defn connect*
@@ -258,7 +259,8 @@
 (defn timeout 
   "invoke fn `f` after `n` seconds"
   [^System.Double n ^clojure.lang.IFn f]
-  (connect (.CreateTimer (Godot.Engine/GetMainLoop) n true) "timeout" f))
+  (connect (.CreateTimer ^SceneTree (Godot.Engine/GetMainLoop) n true) "timeout" f))
+
 
 (def tween-ease-enum {
   :in     0
@@ -295,7 +297,7 @@
     "
   ([object property initialVal finalVal duration] (tween object property initialVal finalVal duration {}))
   ([object property initialVal finalVal duration {:keys [transition easing delay callback]}]
-    (let [^System.Object t (Godot.Tween.)
+    (let [^Godot.Tween t (Godot.Tween.)
           adhoc (AdhocSignals.)]
       (add-child (root) t)
       (.InterpolateProperty t object (Godot.NodePath. property) initialVal finalVal duration 
@@ -312,6 +314,6 @@
     (let [audio (Godot.AudioStreamPlayer.)]
       (add-child (root) audio)
       (set! (.VolumeDb audio) (float n))
-      (set! (.Stream audio) (load-scene s))
+      (set! (.Stream audio) (load-audio s))
       (.Play audio 0)
       (connect* audio "finished" (fn [] (destroy audio))))))

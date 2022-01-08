@@ -1,5 +1,6 @@
 (ns arcadia.internal.autocompletion
-  (:require [clojure.main]))
+  (:require [clojure.main])
+  (:import [System.Reflection]))
 
 ;; This namespace has been adapted from a fork of the `clojure-complete` library by @sogaiu:
 ;; https://github.com/sogaiu/clojure-complete/blob/clr-support/src/complete/core.cljc
@@ -89,7 +90,7 @@
 
 (def sym-key-map
   (-> clojure.lang.Keyword
-      (.GetField "_symKeyMap" (enum-or BindingFlags/NonPublic BindingFlags/Static))
+      (.GetField "_symKeyMap" (enum-or System.Reflection.BindingFlags/NonPublic System.Reflection.BindingFlags/Static))
       (.GetValue nil)))
 
 (defmethod potential-completions :keyword
