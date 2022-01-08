@@ -12,5 +12,10 @@
  ;; Source paths for Clojure files to include
  :source-paths ["src"]
 
+ ;; Declare the Clojure namespaces you intend to include in your exported game
+ :export-namespaces []
+
+ :assembly-paths ["addons/arcadia/Infrastructure" "dlls"]
+
  ;; enables filewatcher to reload .clj files when changed
  :reload-on-change true}
