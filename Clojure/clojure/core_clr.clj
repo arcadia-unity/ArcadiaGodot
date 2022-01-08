@@ -1,4 +1,4 @@
-﻿;   Copyright (c) Rich Hickey. All rights reserved.
+;   Copyright (c) Rich Hickey. All rights reserved.
 ;   The use and distribution terms for this software are covered by the
 ;   Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
 ;   which can be found in the file epl-v10.html at the root of this distribution.
@@ -14,10 +14,11 @@
 
 
  
- (defmacro gen-delegate 
-    [type argVec & body] 
-	(with-meta `(clojure.lang.GenDelegate/Create ~type (fn ~argVec ~@body))
-	           (meta &form)))                                                ;;;  How can we tag with ~type if that is not computed yet
+ (defmacro gen-delegate
+   [type argVec & body]
+   (with-meta `(clojure.lang.GenDelegate/Create ~type (fn ~argVec ~@body))
+     (assoc (meta &form)
+            :tag type)))
     
 ;;; Additional numeric casts
 ;;; Somewhat useless until our arithmetic package is extended to support all these types.
@@ -169,9 +170,9 @@
 
 (defn- generate-generic-delegate 
   [typename typesyms body]
-  (let [types (map (fn [tsym] (clojure.lang.CljCompiler.Ast.HostExpr/MaybeType tsym false)) typesyms)
+  (let [types (map (fn [tsym] (clojure.lang.RT/classForName (str tsym))) typesyms)
   		ftype (symbol (str typename "`" (count types) "[" (str-join types) "]"))]
-	  `(gen-delegate ~ftype ~@body)))
+	  (with-meta `(gen-delegate ~ftype ~@body) {:tag ftype})))
 
 (defmacro sys-func
   "Translates to a gen-delegate for a System.Func<,...> call"

@@ -220,6 +220,48 @@
 (def ^{:private true :dynamic true}
   assert-valid-fdecl (fn [fdecl]))
 
+(def ^{:private true}
+  shorthand-type-names
+  {"float"    Single
+   "double"   Double
+   "short"    Int16
+   "ushort"   UInt16
+   "int"      Int32
+   "uint"     UInt32
+   "long"     Int64
+   "ulong"    UInt64
+   "bool"     Boolean
+   "object"   Object
+   "intptr"   IntPtr
+   "uintptr"  UIntPtr
+   "char"     Char
+   "byte"     Byte
+   "sbyte"    SByte
+   "decimal"  Decimal
+   "string"   String
+   "floats"   System.Single|[]|
+   "doubles"  System.Double|[]|
+   "shorts"   System.Int16|[]|
+   "ushorts"  System.UInt16|[]|
+   "ints"     System.Int32|[]|
+   "uints"    System.UInt32|[]|
+   "longs"    System.Int64|[]|
+   "ulongs"   System.UInt64|[]|
+   "bools"    System.Boolean|[]|
+   "objects"  System.Object|[]|
+   "intptrs"  System.IntPtr|[]|
+   "uintptrs" System.UIntPtr|[]|
+   "chars"    System.Char|[]|
+   "bytes"    System.Byte|[]|
+   "sbytes"   System.SByte|[]|
+   "decimals" System.Decimal|[]|
+   "strings"  System.String|[]|})
+
+;; ported from clojure.lang.CljCompiler.Ast.HostExpr --nasser
+(def maybe-special-tag
+  (fn [tag]
+    (shorthand-type-names (.Name tag))))
+
 (def
  ^{:private true}
  sigs
@@ -240,11 +282,12 @@
                arglist)))
          resolve-tag (fn [argvec]
                         (let [m (meta argvec)
-                              ^clojure.lang.Symbol tag (:tag m)]
+                              tag (:tag m)
+                              tag-name (if tag (.ToString tag) "")]
                           (if (instance? clojure.lang.Symbol tag)
-                            (if (clojure.lang.Util/equiv (.IndexOf (.Name tag) ".") -1)                                              ;;; .indexOf  .getName
-                              (if (clojure.lang.Util/equals nil (clojure.lang.CljCompiler.Ast.HostExpr/maybeSpecialTag tag))         ;;; clojure.lang.Compiler$HostExpr
-                                (let [c (clojure.lang.CljCompiler.Ast.HostExpr/MaybeType tag false)]                                 ;;; clojure.lang.Compiler$HostExpr  maybeClass
+                            (if (clojure.lang.Util/equiv (.IndexOf (.Name ^clojure.lang.Symbol tag) ".") -1)                                              ;;; .indexOf  .getName
+                              (if (clojure.lang.Util/equals nil (maybe-special-tag tag))         ;;; clojure.lang.Compiler$HostExpr
+                                (let [c (clojure.lang.RT/classForName tag-name)]                                 ;;; clojure.lang.Compiler$HostExpr  maybeClass
                                   (if c
                                     (with-meta argvec (assoc m :tag (clojure.lang.Symbol/intern (.Name c))))                         ;;; .getName
                                     argvec))
@@ -331,7 +374,7 @@
 		        ;;todo - restore propagation of fn name
 				;;must figure out how to convey primitive hints to self calls first
 								;;(cons `fn fdecl)
-								(with-meta (cons `fn fdecl) {:rettag (:tag m)})))))
+								(with-meta (cons `fn (cons name fdecl)) {:rettag (:tag m)})))))
 
 (. (var defn) (setMacro))       
 
@@ -1583,8 +1626,8 @@
   {:tag String
    :added "1.0
    :static true"}
-  [^clojure.lang.Named x]
-    (if (string? x) x (. x (getName))))
+  [x]
+    (if (string? x) x (. ^clojure.lang.Named x (getName))))
 
 (defn namespace
   "Returns the namespace String of a symbol or keyword, or nil if not present."
@@ -1776,7 +1819,8 @@
   "Creates and installs a new method of multimethod associated with dispatch-value. "
   {:added "1.0"}
   [multifn dispatch-val & fn-tail]
-  `(. ~(with-meta multifn {:tag 'clojure.lang.MultiFn}) addMethod ~dispatch-val (fn ~@fn-tail)))
+  (let [fn-name (symbol (str multifn "|" dispatch-val "|"))]
+    `(. ~(with-meta multifn {:tag 'clojure.lang.MultiFn}) addMethod ~dispatch-val (fn ~fn-name ~@fn-tail))))
 
 (defn remove-all-methods
   "Removes all of the methods of multimethod."
@@ -2459,23 +2503,23 @@
  [^clojure.lang.Ref ref]
    (.getHistoryCount ref))
 
-(defn ref-min-history
-  "Gets the min-history of a ref, or sets it and returns the ref"
-  {:added "1.1"
-   :static true}
- ([^clojure.lang.Ref ref]
-   (.getMinHistory ref))
- ([^clojure.lang.Ref ref n]
-   (.setMinHistory ref n)))
+; (defn ref-min-history
+;   "Gets the min-history of a ref, or sets it and returns the ref"
+;   {:added "1.1"
+;    :static true}
+;  ([^clojure.lang.Ref ref]
+;    (.getMinHistory ref))
+;  ([^clojure.lang.Ref ref n]
+;    (.setMinHistory ref n)))
 
-(defn ref-max-history
-  "Gets the max-history of a ref, or sets it and returns the ref"
-  {:added "1.1"
-   :static true}
- ([^clojure.lang.Ref ref]
-   (.getMaxHistory ref))
- ([^clojure.lang.Ref ref n]
-   (.setMaxHistory ref n)))
+; (defn ref-max-history
+;   "Gets the max-history of a ref, or sets it and returns the ref"
+;   {:added "1.1"
+;    :static true}
+;  ([^clojure.lang.Ref ref]
+;    (.getMaxHistory ref))
+;  ([^clojure.lang.Ref ref n]
+;    (.setMaxHistory ref n)))
 
 (defn ensure
   "Must be called in a transaction. Protects the ref from modification
@@ -3199,11 +3243,20 @@
 
 ;; evaluation
 
+(def ^:dynamic
+  ^{:doc "The function called to evaluate a form."}
+  *eval-form-fn*
+  (fn [form]
+    ;; (clojure.lang.Compiler/eval form)
+    (throw (NotSupportedException.
+            (str "Bind clojure.core/*eval-form-fn* to enable evaluation. "
+                 "Called with " form)))))
+
 (defn eval
   "Evaluates the form data structure (not text!) and returns the result."
   {:added "1.0"
    :static true}
-  [form] (. clojure.lang.Compiler (eval form)))
+  [form] (*eval-form-fn* form))
 
 (defmacro doseq
   "Repeatedly executes body (presumably for side-effects) with
@@ -3882,7 +3935,7 @@ Note that read can execute code (controlled by *read-eval*),
    :inline-arities #{2}
    :added "1.0"}
   ([array idx]
-   (clojure.lang.Reflector/prepRet (.GetElementType (class array)) (. array (GetValue idx))))  ;;; was .getComponentType (. Array (get array idx)))  
+   (. array (GetValue idx)))  ;;; was .getComponentType (. Array (get array idx)))  
   ([array idx & idxs]
    (apply aget (aget array idx) idxs)))
 
@@ -3981,13 +4034,21 @@ Note that read can execute code (controlled by *read-eval*),
           (recur (inc i) (next xs))))
       ret))
 
+(def ^:dynamic
+  ^{:doc "The function called to expand a macro."}
+  *macroexpand-1-fn*
+  (fn [form]
+    (throw (NotSupportedException.
+            (str "Bind clojure.core/*macroexpand-1-fn* to enable macroexpansion. "
+                 "Called with " form)))))
+
 (defn macroexpand-1
   "If form represents a macro form, returns its expansion,
   else returns form."
   {:added "1.0"
    :static true}
   [form]
-    (. clojure.lang.Compiler (macroexpand1 form)))
+    (*macroexpand-1-fn* form))
 
 (defn macroexpand
   "Repeatedly calls macroexpand-1 on form until it no longer
@@ -4158,7 +4219,7 @@ Note that read can execute code (controlled by *read-eval*),
    :static true}
   [ns]
   (let [ns (the-ns ns)]
-    (filter-key val (fn [ v] (and (instance? clojure.lang.Var v)    ;;;  removed the tag on v:  ^clojure.lang.Var
+    (filter-key val (fn [v] (and (instance? clojure.lang.Var v)    ;;;  removed the tag on v:  ^clojure.lang.Var
                                  (= ns (.ns v))
                                  (.isPublic v)))
                 (ns-map ns))))
@@ -4176,7 +4237,7 @@ Note that read can execute code (controlled by *read-eval*),
    :static true}
   [ns]
   (let [ns (the-ns ns)]
-    (filter-key val (fn [^clojure.lang.Var v] (and (instance? clojure.lang.Var v)
+    (filter-key val (fn [v] (and (instance? clojure.lang.Var v)
                                  (= ns (.ns v))))
                 (ns-map ns))))
 
@@ -4223,7 +4284,7 @@ Note that read can execute code (controlled by *read-eval*),
    :static true}
   [ns]
   (let [ns (the-ns ns)]
-    (filter-key val (fn [^clojure.lang.Var v] (and (instance? clojure.lang.Var v)
+    (filter-key val (fn [v] (and (instance? clojure.lang.Var v)
                                  (not= ns (.ns v))))
                 (ns-map ns))))
 
@@ -4333,7 +4394,10 @@ Note that read can execute code (controlled by *read-eval*),
     (ns-resolve ns nil sym))
   ([ns env sym]
     (when-not (contains? env sym)
-      (clojure.lang.Compiler/maybeResolveIn (the-ns ns) sym))))
+      (try
+        (clojure.lang.Compiler/maybeResolveIn (the-ns ns) sym)
+        (catch clojure.lang.TypeNotFoundException _e
+          nil)))))
 
 (defn resolve
   "same as (ns-resolve *ns* symbol) or (ns-resolve *ns* &env symbol)"
@@ -5172,10 +5236,14 @@ Note that read can execute code (controlled by *read-eval*),
   it were a macro. Cannot be used with variadic (&) args."
   {:added "1.0"}
   [name & decl]
-  (let [[pre-args [args expr]] (split-with (comp not vector?) decl)]
+  (let [[pre-args [args expr]] (split-with (comp not vector?) decl)
+        args-without-tags (vary-meta (->> args
+                                          (map #(vary-meta % dissoc :tag))
+                                          vec)
+                                     dissoc :tag)]
     `(do
        (defn ~name ~@pre-args ~args ~(apply (eval (list `fn args expr)) args))
-       (alter-meta! (var ~name) assoc :inline (fn ~name ~args ~expr))
+       (alter-meta! (var ~name) assoc :inline (fn ~(symbol (str name "_inliner")) ~args-without-tags ~expr))
        (var ~name))))
        
 (defn empty
@@ -5741,9 +5809,11 @@ Note that read can execute code (controlled by *read-eval*),
                name)
         gen-class-clause (first (filter #(= :gen-class (first %)) references))
         gen-class-call
-          (when gen-class-clause
-            (list* `gen-class :name (.Replace (str name) \- \_) :impl-ns name :main true (next gen-class-clause)))   ;;; .replace
-        references (remove #(= :gen-class (first %)) references)
+        (when gen-class-clause
+          (list* `gen-class :name (.Replace (str name) \- \_) :impl-ns name :main true (next gen-class-clause)))   ;;; .replace
+        refer-clojure-reference (some #(when (= :refer-clojure (first %)) %) references)
+        references (remove #(or (= :gen-class (first %))
+                                (= :refer-clojure (first %))) references)
         ;ns-effect (clojure.core/in-ns name)
         name-metadata (meta name)]
     `(do
@@ -5752,8 +5822,10 @@ Note that read can execute code (controlled by *read-eval*),
            `((.resetMeta (clojure.lang.Namespace/find '~name) ~name-metadata)))  
        (with-loading-context
         ~@(when gen-class-call (list gen-class-call))
-        ~@(when (and (not= name 'clojure.core) (not-any? #(= :refer-clojure (first %)) references))
+        ~@(when (and (not= name 'clojure.core) (not refer-clojure-reference))
             `((clojure.core/refer '~'clojure.core)))
+         ~(when refer-clojure-reference
+             (process-reference refer-clojure-reference))
          ~@(map process-reference references))
         (if (.Equals '~name 'clojure.core)                                          ;;; .equals
           nil
@@ -5775,6 +5847,119 @@ Note that read can execute code (controlled by *read-eval*),
        (def ~name ~expr))))
 
 ;;;;;;;;;;; require/use/load, contributed by Stephen C. Gilardi ;;;;;;;;;;;;;;;;;;
+
+;;;;;; bootstrap loading machinery
+;; extends basic clojure loading mechanisms with hooks (dynamic vars) that allow
+;; an embedding system to change how loading and compiling works
+;; contributed by Ramsey Nasser
+(def ^:dynamic
+  ^{:doc "The vector of paths to use as roots when loading namespaces."}
+  *load-paths* [(System.IO.Path/GetDirectoryName (.Location (.Assembly clojure.lang.RT)))])
+
+;; dynamic vars provided by the runtime
+;; *load-file-fn* 
+;; *compile-file-fn*
+;; *load-fn*
+
+#_
+(def ^:dynamic
+  ^{:doc "The function called to evaluate the contents of a file.
+          The file should be read, analyzed, compiled into memory, and evaluated
+          but no file should be written do disk. Throws an exception by default."}
+  *load-file-fn*
+  (fn [^System.IO.FileInfo file relative-path]
+    ;; (clojure.lang.RT/LoadScript file relative-path)
+    (throw (NotSupportedException.
+            (str "Bind clojure.core/*load-file-fn* to enable namespace loading. "
+                 "Called with " (.FullName file))))))
+
+#_
+(def ^:dynamic
+  ^{:doc "The function called to compile a file to disk.
+          Similar to *load-file-fn* but the results should be written to disk."}
+  *compile-file-fn*
+  (fn [^System.IO.FileInfo file relative-path]
+    (throw (NotSupportedException.
+            (str "Bind clojure.core/*compile-file-fn* to enable compilation. "
+                 "Called with " (.FullName file))))))
+
+(defn find-file
+  "port of clojure.lang.RT.FindFile, but uses *load-paths* "
+  ([filename]
+   (loop [path (first *load-paths*)
+          paths (rest *load-paths*)]
+     (when path
+       (if-let [fi (find-file path filename)]
+         fi
+         (recur (first paths) (rest paths))))))
+  ([path filename]
+   (let [probe-path (-> path
+                        (System.IO.Path/Combine filename)
+                        (.Replace "/" (str System.IO.Path/DirectorySeparatorChar)))]
+     (when (System.IO.File/Exists probe-path)
+       (System.IO.FileInfo. probe-path)))))
+
+(defn -try-load-init-type [relative-path]
+  (binding [*ns* *ns*
+            *warn-on-reflection* *warn-on-reflection*
+            *unchecked-math* *unchecked-math*]
+    (clojure.lang.Compiler/TryLoadInitType relative-path)))
+
+(defn -load-assembly [full-path relative-path]
+  (binding [*ns* *ns*
+            *warn-on-reflection* *warn-on-reflection*
+            *unchecked-math* *unchecked-math*]
+    (let [assy (System.Reflection.Assembly/LoadFrom full-path)]
+      (clojure.lang.Compiler/InitAssembly assy relative-path))))
+
+;; port of clojure.lang.RT.load
+(defn -load
+  ([^String relative-path] (-load relative-path true))
+  ([^String relative-path fail-of-not-found]
+   (let [clj-name (str relative-path ".clj")
+         cljc-name (str relative-path ".cljc")
+         clj-dll-name (str (.Replace relative-path "/" ".") ".clj.dll")
+         cljc-dll-name (str (.Replace relative-path "/" ".") ".cljc.dll")
+         ^System.IO.FileInfo clj-info (or (find-file clj-name)
+                                          (find-file cljc-name))
+         ^System.IO.FileInfo assy-info (or (find-file clj-dll-name)
+                                           (find-file cljc-dll-name))]
+     (cond
+       ;; load from file system
+       (and assy-info
+            (or (not clj-info)
+                (>= (.. assy-info LastWriteTime Ticks)
+                    (.. clj-info LastWriteTime Ticks))))
+       (-load-assembly (.FullName assy-info) relative-path)
+
+       (and clj-info *compile-files*)
+       (*compile-file-fn* clj-info relative-path)
+
+       clj-info
+       (*load-file-fn* clj-info relative-path)
+
+       ;; load from init type or fail
+       :else
+       (or (-try-load-init-type relative-path)
+           (and fail-of-not-found
+                (throw (System.IO.FileNotFoundException.
+                        (str "Could not locate any of "
+                             [clj-name cljc-name clj-dll-name cljc-dll-name]
+                             (str " on load path " *load-paths*)
+                             (when (.Contains relative-path "_")
+                               (str " Please check that namespaces with dashes "
+                                    "use underscores in the Clojure file name.")))))))))))
+
+#_
+(def ^:dynamic
+  ^{:doc "The function called whenever a namespace is loaded.
+          By default bound to an implementation that checks the filesystem first
+          and falls back to init types, but can be rebound for bootstraping or
+          running in environments without filesystems. Uses *load-paths* as load
+          path."}
+  *load-fn* -load)
+
+;;;;;; end bootstrap loading machinery
 
 (defonce ^:dynamic 
   ^{:private true
@@ -6010,6 +6195,25 @@ Note that read can execute code (controlled by *read-eval*),
   [& args]
   (apply load-libs :require args))
 
+#_(defn- serialized-require
+  "Like 'require', but serializes loading.
+  Interim function preferred over 'require' for known asynchronous loads.
+  Future changes may make these equivalent."
+  {:added "1.10"}
+  [& args]
+  (locking clojure.lang.RT/REQUIRE_LOCK
+    (apply require args)))
+
+(defn requiring-resolve
+  "Resolves namespace-qualified sym per 'resolve'. If initial resolve
+fails, attempts to require sym's namespace and retries."
+  {:added "1.10"}
+  [sym]
+  (if (qualified-symbol? sym)
+    (or (resolve sym)
+        (do (-> sym namespace symbol require #_serialized-require)
+            (resolve sym)))
+    (throw (ArgumentException. (str "Not a qualified symbol: " sym)))))       ;;; IllegalArgumentException.
 (defn use
   "Like 'require, but also refers to each lib's namespace using
   clojure.core/refer. Use :use in the ns macro in preference to calling
@@ -6043,7 +6247,7 @@ Note that read can execute code (controlled by *read-eval*),
       (check-cyclic-dependency path)
       (when-not (= path (first *pending-paths*))
         (binding [*pending-paths* (conj *pending-paths* path)]
-          (clojure.lang.RT/load (.Substring path 1)))))))       ;;; .substring
+          (*load-fn* (.Substring path 1)))))))       ;;; .substring
 
 (defn compile
   "Compiles the namespace named by the symbol lib into a set of
@@ -7711,17 +7915,19 @@ clojure.lang.IKVReduce
   default), an exception will be thrown for the unknown tag."
   nil)
 
+#_ ;; no file system on ios
 (defn- data-reader-urls []                                         ;;; Actually, we will return a sequence of FileInfo instances
   (let []                                                          ;;; cl (.. Thread currentThread getContextClassLoader)
     (concat
       (enumeration-seq (.GetEnumerator ^System.Collections.IEnumerable (clojure.lang.RT/FindFiles "data_readers.clj")))         ;;; (.getResources cl "data_readers.clj")
       (enumeration-seq (.GetEnumerator ^System.Collections.IEnumerable (clojure.lang.RT/FindFiles "data_readers.clj"))))))      ;;; (.getResources cl "data_readers.cljc")
 
-
+#_ ;; no file system on ios
 (defn- data-reader-var [sym]
   (intern (create-ns (symbol (namespace sym)))
           (symbol (name sym))))
 
+#_ ;; no file system on ios
 (defn- load-data-reader-file [mappings  ^System.IO.FileInfo url]                                        ;;; ^java.net.URL
   (with-open [rdr (clojure.lang.LineNumberingTextReader.                                                ;;; LineNumberingPushbackReader
                     (.OpenText url)  )]                                                                 ;;; (java.io.InputStreamReader.
@@ -7751,12 +7957,14 @@ clojure.lang.IKVReduce
          mappings
          new-mappings)))))
 
+#_ ;; no file system on ios
 (defn- load-data-readers []
   (alter-var-root #'*data-readers*
                   (fn [mappings]
                     (reduce load-data-reader-file
                             mappings (data-reader-urls)))))
 
+#_ ;; no file system on ios
 (try
  (load-data-readers)
  (catch Exception t                                                                 ;;; Throwable

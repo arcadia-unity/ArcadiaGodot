@@ -16,13 +16,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; proxy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(import
- ;;;'(clojure.asm ClassWriter ClassVisitor Opcodes Type) 
- ;;;'(java.lang.reflect Modifier Constructor)
- ;;; '(java.io Serializable NotSerializableException)
- ;;;'(clojure.asm.commons Method GeneratorAdapter)
- ;;;'(clojure.lang IProxy Reflector DynamicClassLoader IPersistentMap PersistentHashMap RT)) 
- '(clojure.lang IProxy RT Reflector))   ;;;DM;;;
+;; (import
+;;  ;;;'(clojure.asm ClassWriter ClassVisitor Opcodes Type) 
+;;  ;;;'(java.lang.reflect Modifier Constructor)
+;;  ;;; '(java.io Serializable NotSerializableException)
+;;  ;;;'(clojure.asm.commons Method GeneratorAdapter)
+;;  ;;;'(clojure.lang IProxy Reflector DynamicClassLoader IPersistentMap PersistentHashMap RT)) 
+;;  '(clojure.lang IProxy RT Reflector))   ;;;DM;;;
  
  
 
@@ -46,6 +46,8 @@
 (defn proxy-name
  {:tag String} 
  [^Type super interfaces]                                                  ;;; Class
+  (throw (System.NotSupportedException. "proxy-name not supported"))
+  #_
   (let [inames (into1 (sorted-set) (map #(.Name ^Type %) interfaces))]      ;;;  .getName ^Class
     (apply str (.Replace (str *ns*) \- \_) ".proxy"                         ;;; .replace
       (interleave (repeat "$")
@@ -55,7 +57,8 @@
           [(.ToString (hash inames) "X")] [(clojure.lang.Compiler/IsCompilingSuffix)])))))                             ;;;[(Integer/toHexString (hash inames))])))))                   
 
 (defn- generate-proxy [^Type super interfaces attributes]     ;;; Class
-  (clojure.lang.GenProxy/GenerateProxyClass super interfaces attributes (proxy-name super interfaces)))  ;;;DM;;
+  (throw (System.NotSupportedException. "generate-proxy not supported"))
+  #_(clojure.lang.GenProxy/GenerateProxyClass super interfaces attributes (proxy-name super interfaces)))  ;;;DM;;
   
 ;;;  (let [cv (new ClassWriter (. ClassWriter COMPUTE_MAXS))
 ;;;        pname (proxy-name super interfaces)
@@ -285,6 +288,8 @@
   requests for the same class set. Returns a Class object."  
   {:added "1.0"}
   [& bases]
+  (throw (System.NotSupportedException. "get-proxy-class not supported"))
+  #_
     (let [[super interfaces attributes] (get-super-and-interfaces bases)
           pname (proxy-name super interfaces)]
       (or  (RT/classForName pname)                            ;;; (RT/loadClassForName pname)  ;; TODO: This causes a problem with muliple compiles
@@ -296,7 +301,7 @@
   creates and returns an instance of the proxy."  
   {:added "1.0"}
   [c & ctor-args]
-    (. Reflector (InvokeConstructor c (to-array ctor-args))))                   ;;; invokeConstructor
+  (Activator/CreateInstance c (to-array ctor-args)))                   ;;; invokeConstructor
 
 (defn init-proxy
   "Takes a proxy instance and a map of strings (which must
@@ -305,7 +310,7 @@
   plus an additional (explicit) first arg corresponding to this, and
   sets the proxy's fn map. Returns the proxy."
   {:added "1.0"}
-  [^IProxy proxy mappings]
+  [^clojure.lang.IProxy proxy mappings]
     (. proxy (__initClojureFnMappings mappings))
 	proxy)
 
@@ -320,14 +325,14 @@
   behavior of an existing instance without changing its identity.
   Returns the proxy."
   {:added "1.0"}
-  [^IProxy proxy mappings]
+  [^clojure.lang.IProxy proxy mappings]
     (. proxy (__updateClojureFnMappings mappings))
 	proxy)
 
 (defn proxy-mappings
   "Takes a proxy instance and returns the proxy's fn map."
   {:added "1.0"}
-  [^IProxy proxy]
+  [^clojure.lang.IProxy proxy]
     (. proxy (__getClojureFnMappings)))
 
 (defmacro proxy
@@ -356,6 +361,8 @@
   proxied."
   {:added "1.0"}
   [class-and-interfaces args & fs]
+  (throw (System.NotSupportedException. "proxy macro not supported"))
+  #_
    (let [bases (map #(or (resolve %) (throw (Exception. (str "Can't resolve: " %)))) 
                     class-and-interfaces)
          [super interfaces attributes] (get-super-and-interfaces bases)
