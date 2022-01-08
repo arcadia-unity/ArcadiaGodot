@@ -15,7 +15,7 @@ Setup
 ----------
 You'll need a version of [Godot with Mono](https://godotengine.org/download) and `MSBuild` (see the Requirements section on the download page).
 
-Clone this repository into your project folder.
+Clone this repository into your project folder, under `%godot_project%/addons` subfolder.
 
 In the Godot Editor, run the `Project > Tools > Mono > Create C# Solution` menu command.
 
@@ -23,11 +23,13 @@ Edit the `{project}.csproj` file to include the following itemgroup.
 
 ```xml
   <ItemGroup>
-    <Reference Include="ArcadiaGodot/Infrastructure/**/*.dll"></Reference>
+    <Reference Include="addons/ArcadiaGodot/Infrastructure/**/*.dll"></Reference>
   </ItemGroup>
 ```
 
-Finally, you'll need at least one `ArcadiaHook.cs` script in your main scene.  You'll then be able to build (play button) and connect to one of the repls or reload `.clj` files that have changed.
+In order to be able compile clojure in assemblies(dll) you need to activate plugin, in godot editor menu open `Project > Project Settings > Plugins` and check `Enable`.
+
+Finally, you'll need at least one `%godot_project%/addons/ArcadiaGodot/ArcadiaHook.cs` script in your main scene.  You'll then be able to build (play button) and connect to one of the repls or reload `.clj` files that have changed.
 
 Usage
 -----
@@ -70,17 +72,18 @@ For quick access try `telnet localhost 5571`.
 
 ### Exports
 
-After building your project you'll need to manually compile your clojure namespaces into the build directory:
+Exporting
+To make your game playable outside of Godot editor you have to export it. This is a three step process:
 
-```
-(require 'arcadia.internal.compiler)
-(arcadia.internal.compiler/aot "export/dlls" ['selfsame.core])
-```
+1. Declare the Clojure namespaces you intend to include in your exported game in the :export-namespaces key in your configuration.edn file. The expected syntax is a vector of symbols where each symbol corresponds to a namespace. Each namespace will be compiled along with every namespace it requires or uses.
 
-The entire dependency tree for the given namespaces will be compiled as well.
+2. Click `Project -> Tools -> Arcadia -> Prepare for Export`. This will compile your Clojure code to .dll files that Godot can export.
 
-Note: the path must allready exist. You can place dlls in the root build directory or a folder named "dlls".
-
+3. Click `Project → Export..` setup projects for platform, in `Resources` tab add `addons/ArcadiaGodot/Infrastructure/*.dll, dlls/*.dll, addons/ArcadiaGodot/configuration.edn, configuration.edn`
+for 
+Platform specific export settings:
+MacOS uncheck `Options tab -> Codesign -> Hardened Runtime`
+and export your Godot game as normal.
 
 ## Differences from Arcadia Unity
 
