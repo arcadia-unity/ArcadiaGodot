@@ -1,6 +1,9 @@
 using System;
 using clojure.lang;
 using System.Collections.Generic;
+using Assembly = System.Reflection.Assembly;
+using Godot;
+using Path = System.IO.Path;
 
 namespace Arcadia
 {
@@ -339,6 +342,60 @@ namespace Arcadia
 			sw.Stop();
 			return sw.Elapsed.TotalMilliseconds / n;
 		}
+
+		public static void LoadAssembly(String filepath) {
+            File dll = new File();
+            dll.Open(filepath, Godot.File.ModeFlags.Read);
+            var buffer = dll.GetBuffer((long)dll.GetLen());
+            Assembly.Load(buffer);
+            dll.Close();
+        }
+
+		public static byte[] LoadAsBuffer(string filepath) {
+			File file = new File();
+            file.Open(filepath, Godot.File.ModeFlags.Read);
+            var buffer = file.GetBuffer((long)file.GetLen());
+			file.Close();
+			
+			return buffer;
+		}
+
+		public static void LoadAssemblyWithPdb(String filepath) {
+			byte[] dllBuffer = LoadAsBuffer(filepath + ".dll");
+			byte[] pdbBuffer = LoadAsBuffer(filepath + ".pdb");
+            Assembly.Load(dllBuffer, pdbBuffer);
+        }
+
+		public static string LoadText(String filepath) {
+            File file = new File();
+			if (!file.FileExists(filepath)) return "";
+            
+			file.Open(filepath, Godot.File.ModeFlags.Read);
+            String s = file.GetAsText();
+            file.Close();
+			return s;
+        }
+
+		public static void RemoveFile(String fileResPath) {
+            Directory arcadiaDllsDir = new Directory();
+			
+            if (arcadiaDllsDir.FileExists(fileResPath)) {
+				arcadiaDllsDir.Remove(fileResPath);
+			}
+        }
+
+        public static void LoadAssembliesFromDirectory(String dirPath) {
+            Directory arcadiaDllsDir = new Directory();
+            arcadiaDllsDir.Open(dirPath);
+            arcadiaDllsDir.ListDirBegin();
+            String filename;
+            while ((filename = arcadiaDllsDir.GetNext()) != "") {
+                if (filename.EndsWith(".clj.dll")) {
+                    String filepath = Path.Combine(dirPath, filename);
+                    LoadAssembly(filepath);
+                }
+            }
+        }
 
 	}
 }
