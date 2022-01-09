@@ -29,6 +29,10 @@ namespace Arcadia
 		{
             return Input.IsActionPressed(action);
         }
+
+        public static void playAudioStream(AudioStreamPlayer audioPlayer) {
+            audioPlayer.Play();
+        }
     }
 
 }

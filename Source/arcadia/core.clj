@@ -2,8 +2,8 @@
   (:require
     clojure.string)
   (:import
-   [Godot AudioStream Texture Viewport Node GD ResourceLoader PackedScene
-    Node Node2D SceneTree Sprite Spatial]
+   [Godot AudioStream AudioStreamPlayer Texture Viewport Node GD ResourceLoader 
+    PackedScene Node Node2D SceneTree Sprite Spatial]
    [Arcadia ArcadiaHook GodotHelpers]))
 
 (defn log
@@ -146,7 +146,7 @@
 (defn connect*
   "Like `connect` but uses a unique Godot.Object for multiple connections to one 
    signal. Returns the object if you need to `disconnect` or `destroy` it later."
-  [^Node node ^String signal-name f]
+  [^Godot.Object node ^String signal-name f]
   (let [o (AdhocSignals.)]
     (_connect node signal-name o f) o))
 
@@ -315,5 +315,6 @@
       (add-child (root) audio)
       (set! (.VolumeDb audio) (float n))
       (set! (.Stream audio) (load-audio s))
-      (.Play audio 0)
+      ;; (.Play audio 0) cause jit compile, do not work on ios export
+      (GodotHelpers/playAudioStream audio)
       (connect* audio "finished" (fn [] (destroy audio))))))
