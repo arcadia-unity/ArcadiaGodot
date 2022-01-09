@@ -79,7 +79,7 @@ To make your game playable outside of Godot editor you have to export it. This i
 
 2. Click `Project -> Tools -> Arcadia -> Prepare for Export`. This will compile your Clojure code to .dll files that Godot can export.
 
-3. Click `Project → Export..` setup projects for platform, in `Resources` tab add `addons/ArcadiaGodot/Infrastructure/*.dll, dlls/*.dll, addons/ArcadiaGodot/configuration.edn, configuration.edn`
+3. Click `Project → Export..` setup projects for platform, in `Resources` tab add `addons/ArcadiaGodot/Infrastructure/*.*, dlls/*.dll, addons/ArcadiaGodot/configuration.edn, configuration.edn`
 for 
 Platform specific export settings:
 MacOS uncheck `Options tab -> Codesign -> Hardened Runtime`
