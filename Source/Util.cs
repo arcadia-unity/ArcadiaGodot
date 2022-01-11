@@ -345,8 +345,8 @@ namespace Arcadia
 
 		public static byte[] LoadAsBuffer(string filepath) {
 			File file = new File();
-            file.Open(filepath, Godot.File.ModeFlags.Read);
-            var buffer = file.GetBuffer((long)file.GetLen());
+			file.Open(filepath, Godot.File.ModeFlags.Read);
+			var buffer = file.GetBuffer((long)file.GetLen());
 			file.Close();
 			
 			return buffer;
@@ -354,45 +354,45 @@ namespace Arcadia
 
 		public static Assembly LoadAssembly(String filepath) {
 			byte[] dllBuffer = LoadAsBuffer(filepath);
-            return Assembly.Load(dllBuffer);
-        }
+			return Assembly.Load(dllBuffer);
+		}
 
 		public static void LoadAssemblyWithPdb(String filepath) {
 			byte[] dllBuffer = LoadAsBuffer(filepath + ".dll");
 			byte[] pdbBuffer = LoadAsBuffer(filepath + ".pdb");
-            Assembly.Load(dllBuffer, pdbBuffer);
-        }
+			Assembly.Load(dllBuffer, pdbBuffer);
+		}
 
 		public static string LoadText(String filepath) {
-            File file = new File();
+			File file = new File();
 			if (!file.FileExists(filepath)) return "";
             
 			file.Open(filepath, Godot.File.ModeFlags.Read);
-            String s = file.GetAsText();
-            file.Close();
+			String s = file.GetAsText();
+			file.Close();
 			return s;
-        }
+		}
 
 		public static void RemoveFile(String fileResPath) {
-            Directory arcadiaDllsDir = new Directory();
+			Directory arcadiaDllsDir = new Directory();
 			
-            if (arcadiaDllsDir.FileExists(fileResPath)) {
+			if (arcadiaDllsDir.FileExists(fileResPath)) {
 				arcadiaDllsDir.Remove(fileResPath);
 			}
-        }
+		}
 
-        public static void LoadAssembliesFromDirectory(String dirPath) {
-            Directory arcadiaDllsDir = new Directory();
-            arcadiaDllsDir.Open(dirPath);
-            arcadiaDllsDir.ListDirBegin();
-            String filename;
-            while ((filename = arcadiaDllsDir.GetNext()) != "") {
-                if (filename.EndsWith(".clj.dll")) {
-                    String filepath = Path.Combine(dirPath, filename);
-                    LoadAssembly(filepath);
-                }
-            }
-        }
+		public static void LoadAssembliesFromDirectory(String dirPath) {
+				Directory arcadiaDllsDir = new Directory();
+				arcadiaDllsDir.Open(dirPath);
+				arcadiaDllsDir.ListDirBegin();
+				String filename;
+				while ((filename = arcadiaDllsDir.GetNext()) != "") {
+						if (filename.EndsWith(".clj.dll")) {
+								String filepath = Path.Combine(dirPath, filename);
+								LoadAssembly(filepath);
+						}
+				}
+		}
 
 	}
 }
