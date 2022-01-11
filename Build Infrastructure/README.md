@@ -5,3 +5,4 @@ In order to build Infrastructure dlls you need to
 
 3) copy dlls from `nostrand/bin/x64/Release/net472` and `./Infrastructure` to `../Infrastructure`
 
+4) In godot editor run scnene res://addons/ArcadiaGodot/scenes/arcadia_dev_menu.tscn and push button "Compile arcadia.internal.filesystem"

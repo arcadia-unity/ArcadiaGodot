@@ -5,7 +5,7 @@
  :udp-repl 11211
  :socket-repl 5571
  :nrepl 3722
- 
+
  ;; TODO
  :nrepl-auto-completion false
 
@@ -14,8 +14,10 @@
 
  ;; Declare the Clojure namespaces you intend to include in your exported game
  :export-namespaces []
+ ;; folder with exported dlls
+ :export-folder "dlls"
 
- :assembly-paths ["addons/arcadia/Infrastructure" "dlls"]
+ :assembly-paths []
 
  ;; enables filewatcher to reload .clj files when changed
  :reload-on-change true}

@@ -6,26 +6,30 @@ using clojure.lang;
 
 [Tool]
 public class ArcadiaPlugin : EditorPlugin {
-    private string TOOL_NAME = "Arcadia -> Prepare for Export";
+    private string ARCADIA_EXPORT = "Arcadia - Prepare for Export";
 
     public override void _EnterTree() {
-        this.AddToolMenuItem(TOOL_NAME, this, nameof(this.Compile));
+        this.AddToolMenuItem(ARCADIA_EXPORT, this, nameof(this.Compile));
+    }
+
+    private void InitMagic() {
+        Boot.Initialize();
+        
+        Util.Invoke(RT.var("arcadia.internal.config", "reload-config"));
+        Boot.LoadConfig();
     }
 
     public void Compile(object ud) {
         GD.Print("Arcadia - Prepare for Export");
         
-        Boot.Initialize();
-        
-        Util.Invoke(RT.var("arcadia.internal.config", "reload-config"));
-        Boot.LoadConfig();
+        InitMagic();
         
         RT.load("arcadia/internal/compiler");
-        Util.Invoke(RT.var("arcadia.internal.compiler", "prepare-export"), "dlls");
+        Util.Invoke(RT.var("arcadia.internal.compiler", "prepare-export"));
     }
-    
+
     public override void _ExitTree() {
-        this.RemoveToolMenuItem(TOOL_NAME);
+        this.RemoveToolMenuItem(ARCADIA_EXPORT);
     }
 
 }

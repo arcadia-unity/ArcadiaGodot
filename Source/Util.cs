@@ -343,14 +343,6 @@ namespace Arcadia
 			return sw.Elapsed.TotalMilliseconds / n;
 		}
 
-		public static void LoadAssembly(String filepath) {
-            File dll = new File();
-            dll.Open(filepath, Godot.File.ModeFlags.Read);
-            var buffer = dll.GetBuffer((long)dll.GetLen());
-            Assembly.Load(buffer);
-            dll.Close();
-        }
-
 		public static byte[] LoadAsBuffer(string filepath) {
 			File file = new File();
             file.Open(filepath, Godot.File.ModeFlags.Read);
@@ -359,6 +351,11 @@ namespace Arcadia
 			
 			return buffer;
 		}
+
+		public static Assembly LoadAssembly(String filepath) {
+			byte[] dllBuffer = LoadAsBuffer(filepath);
+            return Assembly.Load(dllBuffer);
+        }
 
 		public static void LoadAssemblyWithPdb(String filepath) {
 			byte[] dllBuffer = LoadAsBuffer(filepath + ".dll");
