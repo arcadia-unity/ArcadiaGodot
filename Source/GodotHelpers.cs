@@ -33,6 +33,10 @@ namespace Arcadia
         public static void playAudioStream(AudioStreamPlayer audioPlayer) {
             audioPlayer.Play();
         }
+
+        public static Node GetNode (Node node, NodePath np) {
+            return node.GetNode(np);
+        }
     }
 
 }

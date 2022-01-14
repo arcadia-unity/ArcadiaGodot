@@ -2,7 +2,7 @@
   (:require
     clojure.string)
   (:import
-   [Godot AudioStream AudioStreamPlayer Texture Viewport Node GD ResourceLoader 
+   [Godot MeshInstance AudioStream AudioStreamPlayer Texture Viewport Node GD ResourceLoader 
     PackedScene Node Node2D SceneTree Sprite Spatial]
    [Arcadia ArcadiaHook GodotHelpers]))
 
@@ -16,7 +16,7 @@
   [^Godot.Object o]
   (if (Godot.Object/IsInstanceValid o) o nil))
 
-(defn node-path [s] (Godot.NodePath. s))
+(defn ^Godot.NodePath node-path [^String s] (Godot.NodePath. s))
 
 (defn ^Viewport root
   "returns the root node"
@@ -58,12 +58,12 @@
 (defn ^PackedScene load-scene [^String s] (GodotHelpers/LoadScene s))
 (defn ^Texture load-texture [^String s] (GodotHelpers/LoadTexture s))
 
-(defn get-node 
+(defn ^Godot.Node get-node 
   "Gets child of a node by path, or uses the global scene viewport Node if only 1 argument is given, \"/root/etc\""
   ([s]
    (get-node (root) s))
-  ([n s]
-    (.GetNode n (node-path s))))
+  ([^Node n ^String s]
+   (GodotHelpers/GetNode n (node-path s))))
 
 (defn find-node 
   "Recursive find a descendant node , s is a name string supporting * and ? wildcards. Uses the global scene viewport Node if only 1 argument is given"
