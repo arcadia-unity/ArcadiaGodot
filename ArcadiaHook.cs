@@ -1,79 +1,9 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using Path = System.IO.Path;
 using clojure.lang;
 
-namespace Arcadia
-{
-
-    public class Boot {
-        private static bool _initialized = false;
-
-        static void DisableSpecChecking()
-        {
-            System.Environment.SetEnvironmentVariable("CLOJURE_SPEC_CHECK_ASSERTS", "false");
-            System.Environment.SetEnvironmentVariable("CLOJURE_SPEC_SKIP_MACROS", "true");
-            System.Environment.SetEnvironmentVariable("clojure.spec.check-asserts", "false");
-            System.Environment.SetEnvironmentVariable("clojure.spec.skip-macros", "true");
-        }
-
-        public static void AddSourcePaths()
-        {
-            var env = System.Environment.GetEnvironmentVariable("CLOJURE_LOAD_PATH");
-            var SourcePaths = Util.Invoke(RT.var("arcadia.internal.config", "get-config-key"), "source-paths");
-            foreach(string SourcePath in RT.toArray(SourcePaths))
-            {
-                env = env + Path.PathSeparator + Path.Combine(System.IO.Directory.GetCurrentDirectory(), SourcePath);
-            }
-            System.Environment.SetEnvironmentVariable("CLOJURE_LOAD_PATH", env);
-        }
-
-        public static void SetClojureLoadPath()
-        {
-            System.Environment.SetEnvironmentVariable(
-                "CLOJURE_LOAD_PATH",
-                Path.Combine(System.IO.Directory.GetCurrentDirectory(), "ArcadiaGodot", "Source") +
-                Path.PathSeparator+
-                Path.Combine(System.IO.Directory.GetCurrentDirectory(), "ArcadiaGodot", "Clojure"));
-        }
-
-        public static void SetClojureLoadPathWithDLLs()
-        {
-            System.Environment.SetEnvironmentVariable(
-                "CLOJURE_LOAD_PATH",
-                Path.Combine(System.IO.Directory.GetCurrentDirectory(), "ArcadiaGodot", "Source") +
-                Path.PathSeparator +
-                Path.Combine(System.IO.Directory.GetCurrentDirectory(), "ArcadiaGodot", "Clojure") +
-                Path.PathSeparator +
-                Path.Combine(System.IO.Directory.GetCurrentDirectory(), "dlls"));
-        }
-
-        public static void Initialize()
-        {
-            if (!_initialized)
-            {
-                _initialized = true;
-                GD.Print("Starting Arcadia..");
-                DisableSpecChecking();
-                SetClojureLoadPathWithDLLs();
-                RT.load("clojure/core");
-                RT.load("arcadia/internal/namespace");
-                if (OS.IsDebugBuild()) {
-                    RT.load("arcadia/repl");
-                    Util.Invoke(RT.var("arcadia.repl", "launch"), null);
-                    RT.load("arcadia/internal/config");
-                    AddSourcePaths();
-                    if (RT.booleanCast(Util.Invoke(RT.var("arcadia.internal.config", "get-config-key"), "reload-on-change")))
-                    {
-                        var watcher = new CrossPlatformArcadiaWatcher(false);
-                    }
-                }
-                GD.Print("Arcadia loaded!");
-            }
-        }
-    }
-
+namespace Arcadia {
 	public class ArcadiaHook : Node
 	{
         public Node target;
@@ -204,8 +134,16 @@ namespace Arcadia
             }
         }
 
-        public void AddEditorHook(string type, string field){
-            IFn fn = (IFn)Util.Invoke(RT.var("arcadia.internal.namespace", "eval-ifn"), field);
+        public void AddEditorHook(string type, string field) {
+            // eval-ifn break ios build
+            // IFn fn = (IFn)Util.Invoke(RT.var("arcadia.internal.namespace", "eval-ifn"), field);
+            if (field.Trim().Length() == 0) return;
+
+            String[] parts = field.Split("/");
+            String ns = parts[0].Replace("#'", "");
+            String name = parts[1];
+            RT.load(ns.Replace(".", "/"));
+            IFn fn = (IFn)RT.var(ns, name).getRawRoot();
             if (fn != null)
             {
                 Add(type, "editor", fn);

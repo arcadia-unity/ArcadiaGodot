@@ -129,31 +129,32 @@
 (defn munge [s]
   ((if (symbol? s) symbol str) (clojure.lang.Compiler/munge (str s))))
 
+;; TODO restore type hints when hinting compilation is fixed
 (defn- imap-cons
   [^clojure.lang.IPersistentMap this o]
   (cond
-     (map-entry? o)                                                                                        ;;; java.util.Map$Entry
-     (let [^clojure.lang.IMapEntry pair o]                                                                 ;;; java.util.Map$Entry
-       (.assoc this (.key pair) (.val pair)))                                                              ;;; .getKey .getValue
-   (instance? System.Collections.DictionaryEntry o)                                                        ;;; DM: Added
-   (let [^System.Collections.DictionaryEntry pair o]                                                       ;;; DM: Added
-       (.assoc this (.Key pair) (.Value pair)))                                                            ;;; DM: Added
-   (instance? |System.Collections.Generic.KeyValuePair`2[System.Object,System.Object]|  o)                 ;;; DM: Added
-   (let [^|System.Collections.Generic.KeyValuePair`2[System.Object,System.Object]| pair o]                      ;;; DM: Added
-       (.assoc this (.Key pair) (.Value pair)))                                                            ;;; DM: Added
-   (instance? clojure.lang.IPersistentVector o)
-     (let [^clojure.lang.IPersistentVector vec o]
-       (.assoc this (.nth vec 0) (.nth vec 1)))
-   :else (loop [this this
-                o o]
-      (if (seq o)
-        (let [^clojure.lang.IMapEntry pair (first o)]                ;;; java.util.Map$Entry
-          (recur (.assoc this (.key pair) (.val pair)) (rest o)))    ;;; .getKey .getValue
-        this))))
+    (map-entry? o)                                                                                        ;;; java.util.Map$Entry
+    (let [^clojure.lang.IMapEntry pair o]                                                                 ;;; java.util.Map$Entry
+      (.assoc this (.key pair) (.val pair)))                                                              ;;; .getKey .getValue
+    (instance? System.Collections.DictionaryEntry o)                                                        ;;; DM: Added
+    (let [^System.Collections.DictionaryEntry pair o]                                                       ;;; DM: Added
+      (.assoc this (.Key pair) (.Value pair)))                                                            ;;; DM: Added
+    (instance? |System.Collections.Generic.KeyValuePair`2[System.Object,System.Object]|  o)                 ;;; DM: Added
+    (let [^|System.Collections.Generic.KeyValuePair`2[System.Object,System.Object]| pair o]                      ;;; DM: Added
+      (.assoc this (.Key pair) (.Value pair)))                                                            ;;; DM: Added
+    (instance? clojure.lang.IPersistentVector o)
+    (let [^clojure.lang.IPersistentVector vec o]
+      (.assoc this (.nth vec 0) (.nth vec 1)))
+    :else (loop [this this
+                 o o]
+            (if (seq o)
+              (let [^clojure.lang.IMapEntry pair (first o)]                ;;; java.util.Map$Entry
+                (recur (.assoc this (.key pair) (.val pair)) (rest o)))    ;;; .getKey .getValue
+              this))))
 
-(defn- emit-defrecord 
+(defn- emit-defrecord
   "Do not use this directly - use defrecord"
-  {:added "1.2"} 
+  {:added "1.2"}
   [tagname cname fields interfaces methods opts]
   (let [classname (with-meta (symbol (str (namespace-munge *ns*) "." cname)) (meta cname))
         interfaces (vec interfaces)
@@ -165,137 +166,138 @@
         fields (conj fields '__meta '__extmap
                      '^:unsynchronized-mutable __hash
                      '^:unsynchronized-mutable __hasheq)
-		type-hash (hash classname)]
+        type-hash (hash classname)]
     (when (some #{:volatile-mutable :unsynchronized-mutable} (mapcat (comp keys meta) hinted-fields))
       (throw (ArgumentException. ":volatile-mutable or :unsynchronized-mutable not supported for record fields")))   ;;; IllegalArgumentException
     (let [gs (gensym)]
-    (letfn 
-     [(irecord [[i m]]
-        [(conj i 'clojure.lang.IRecord)
-         m])
-      (eqhash [[i m]] 
-        [(conj i 'clojure.lang.IHashEq)
-         (conj m
-               `(hasheq [this#] (let [hq# ~'__hasheq]
-                                  (if (zero? hq#)
-                                    (let [h# (int (bit-xor ~type-hash (clojure.lang.APersistentMap/mapHasheq this#)))]
-                                      (set! ~'__hasheq h#)
-                                      h#)
-                                    hq#)))
-               `(GetHashCode [this#] (let [hash# ~'__hash]                                           ;;; hashCode
-                                    (if (zero? hash#)
-                                      (let [h# (clojure.lang.APersistentMap/mapHash this#)]
-                                        (set! ~'__hash h#)
+      (letfn
+       [(irecord [[i m]]
+          [(conj i 'clojure.lang.IRecord)
+           m])
+        (eqhash [[i m]]
+          [(conj i 'clojure.lang.IHashEq)
+           (conj m
+                 `(hasheq [this#] (let [hq# ~'__hasheq]
+                                    (if (zero? hq#)
+                                      (let [h# (int (bit-xor ~type-hash (clojure.lang.APersistentMap/mapHasheq this#)))]
+                                        (set! ~'__hasheq h#)
                                         h#)
-                                      hash#)))
-               `(Equals [this# ~gs] (clojure.lang.APersistentMap/mapEquals this# ~gs)))])       ;;; equals
-      (iobj [[i m]] 
-            [(conj i 'clojure.lang.IObj)
-             (conj m `(meta [this#] ~'__meta)
-                   `(withMeta [this# ~gs] (new ~tagname ~@(replace {'__meta gs} fields))))])
-      (ilookup [[i m]] 
-         [(conj i 'clojure.lang.ILookup 'clojure.lang.IKeywordLookup)
-          (conj m `(valAt [this# k#] (.valAt this# k# nil))
-                `(valAt [this# k# else#] 
-                   (case k# ~@(mapcat (fn [fld] [(keyword fld) fld]) 
-                                       base-fields)
-                         (get ~'__extmap k# else#)))
-                `(getLookupThunk [this# k#]
-                   (let [~'gclass (class this#)]              
-                     (case k#
-                           ~@(let [hinted-target (with-meta 'gtarget {:tag tagname})]
-                               (mapcat 
-                                (fn [fld]
-                                  [(keyword fld) 
-                                   `(reify clojure.lang.ILookupThunk 
-                                           (get [~'thunk ~'gtarget] 
-                                                (if (identical? (class ~'gtarget) ~'gclass) 
-                                                  (. ~hinted-target ~(symbol (str "-" fld)))
-                                                  ~'thunk)))])
-                                base-fields))
-                           nil))))])      
-      (imap [[i m]] 
-            [(conj i 'clojure.lang.IPersistentMap)
-             (conj m 
-                   `(count [this#] (+ ~(count base-fields) (count ~'__extmap)))
-                   `(empty [this#] (throw (InvalidOperationException. (str "Can't create empty: " ~(str classname)))))   ;;; UnsupportedOperationException
-                   `(^clojure.lang.IPersistentMap cons [this# e#] ((var imap-cons) this# e#))                          ;;; type hint added
-                   `(equiv [this# ~gs]
-                        (boolean 
-                         (or (identical? this# ~gs)
-                             (when (identical? (class this#) (class ~gs))
-                               (let [~gs ~(with-meta gs {:tag tagname}) ]
-                                 (and  ~@(map (fn [fld] `(= ~fld (. ~gs ~(symbol (str "-" fld))))) base-fields)
-                                       (= ~'__extmap (. ~gs ~'__extmap))))))))
-                   `(containsKey [this# k#] (not (identical? this# (.valAt this# k# this#))))
-                   `(entryAt [this# k#] (let [v# (.valAt this# k# this#)]
-                                            (when-not (identical? this# v#)
-                                              (clojure.lang.MapEntry/create k# v#))))
-                   `(seq [this#] (seq (concat [~@(map #(list `clojure.lang.MapEntry/create (keyword %) %) base-fields)]
-                                          ~'__extmap)))
-				   `(|System.Collections.Generic.IEnumerable`1[clojure.lang.IMapEntry]|.GetEnumerator [this#]  (.GetEnumerator (clojure.lang.RecordEnumerable. this# [~@(map keyword base-fields)] (clojure.lang.RT/iter ~'__extmap))))
-                   `(^clojure.lang.IPersistentMap assoc [this# k# ~gs]                        ;;; type hint added
-                     (condp identical? k#
-                       ~@(mapcat (fn [fld]
-                                   [(keyword fld) (list* `new tagname (replace {fld gs} (remove '#{__hash __hasheq} fields)))])
-                                 base-fields)
-                       (new ~tagname ~@(remove '#{__extmap __hash __hasheq} fields) (assoc ~'__extmap k# ~gs))))
-                   `(^clojure.lang.IPersistentMap assocEx [this# k# v#]                                       ;;; ADDED
-                       (if (.containsKey this# k#)                                                            ;;; ADDED
-                           (throw (Exception. "Key already present"))                                         ;;; ADDED
-                           (.assoc this# k# v#)))                                                             ;;; ADDED
-                   `(without [this# k#] (if (contains? #{~@(map keyword base-fields)} k#)
-                                            (dissoc (with-meta (into {} this#) ~'__meta) k#)
-                                            (new ~tagname ~@(remove '#{__extmap __hash __hasheq} fields)
-                                                 (not-empty (dissoc ~'__extmap k#))))))])
-      (dict [[i m]]
-           [(conj i 'System.Collections.IDictionary)
-            (conj m   ;;; TODO: Need properties, really
-                  `(get_Count [this#] (.count this#))
-                  `(get_IsFixedSize [this#] true)
-                  `(get_IsReadOnly [this#] true)
-                  `(get_IsSynchronized [this#] true)
-                  `(get_Item [this# k#] (.valAt this# k#))
-                  `(^System.Void set_Item [this# k# v#] (throw (NotSupportedException.)))
-                  `(Remove [this# k#] (throw (NotSupportedException.)))
-                  `(get_Keys [this#] (set (keys this#)))
-                  `(get_SyncRoot [this#] this#)
-                  `(get_Values [this#] (set (vals this#)))
-                  `(Add [this# k# v#] (throw (NotSupportedException.)))
-                  `(Clear [this#] (throw (NotSupportedException.)))
-                  `(Contains [this# k#] (.containsKey this# k#))
-                  `(CopyTo [this# a# i#]  (throw (InvalidOperationException.)))   ;;; TODO: implement this.  Got lazy.
-                  `(System.Collections.IDictionary.GetEnumerator [this#]  (clojure.lang.Runtime.ImmutableDictionaryEnumerator. this#))
-			      `(System.Collections.IEnumerable.GetEnumerator [this#]  (.GetEnumerator (clojure.lang.RecordEnumerable. this# [~@(map keyword base-fields)] (clojure.lang.RT/iter ~'__extmap))))
-                  )])
-	  (cntd [[i m]]                                                                                                                 ;;; ADDED
-	        [(conj i 'clojure.lang.Counted)                                                                                         ;;; ADDED
-			 (conj m                                                                                                                ;;; ADDED
-			      `(clojure.lang.Counted.count [this#] (+ ~(count base-fields) (count ~'__extmap))))])	                            ;;; ADDED		                   
-      (ipc [[i m]]                                                                                                                  ;;; ADDED
-           [(conj i 'clojure.lang.IPersistentCollection)                                                                            ;;; ADDED
-            (conj m                                                                                                                 ;;; ADDED                   
-                  `(clojure.lang.IPersistentCollection.cons [this# e#]                                                              ;;; ADDED
-                        ((var imap-cons) this# e#))                                                                                 ;;; ADDED                   
-			      `(clojure.lang.IPersistentCollection.count [this#] (+ ~(count base-fields) (count ~'__extmap))))])                ;;; ADDED
-      (associative                                                                                                                  ;;; ADDED
-            [[i m]]                                                                                                                 ;;; ADDED
-            [(conj i 'clojure.lang.Associative)                                                                                     ;;; ADDED
-             (conj m                                                                                                                ;;; ADDED
-                   `(clojure.lang.Associative.assoc [this# k# ~gs]                                                                  ;;; ADDED
-                     (condp identical? k#                                                                                           ;;; ADDED
-                       ~@(mapcat (fn [fld]                                                                                          ;;; ADDED
-                                   [(keyword fld) (list* `new tagname (replace {fld gs} (remove '#{__hash __hasheq} fields)))])     ;;; ADDED
-                                 base-fields)                                                                                       ;;; ADDED
-                       (new ~tagname ~@(remove '#{__extmap __hash __hasheq} fields) (assoc ~'__extmap k# ~gs)))))])]                ;;; ADDED
-     (let [[i m] (-> [interfaces methods] irecord eqhash iobj ilookup imap associative cntd ipc dict)]                              ;;; Associative, ipc, cntd added
-       `(deftype* ~(symbol (name (ns-name *ns*)) (name tagname)) ~classname
-          ~(conj hinted-fields '__meta '__extmap
-                 '^int ^:unsynchronized-mutable __hash
-                 '^int ^:unsynchronized-mutable __hasheq)
-          :implements ~(vec i)
-          ~@(mapcat identity opts)
-          ~@m))))))
+                                      hq#)))
+                 `(GetHashCode [this#] (let [hash# ~'__hash]                                           ;;; hashCode
+                                         (if (zero? hash#)
+                                           (let [h# (clojure.lang.APersistentMap/mapHash this#)]
+                                             (set! ~'__hash h#)
+                                             h#)
+                                           hash#)))
+                 `(Equals [this# ~gs] (clojure.lang.APersistentMap/mapEquals this# ~gs)))])       ;;; equals
+        (iobj [[i m]]
+          [(conj i 'clojure.lang.IObj)
+           (conj m `(meta [this#] ~'__meta)
+                 `(withMeta [this# ~gs] (new ~tagname ~@(replace {'__meta gs} fields))))])
+        (ilookup [[i m]]
+          [(conj i 'clojure.lang.ILookup 'clojure.lang.IKeywordLookup)
+           (conj m `(valAt [this# k#] (.valAt this# k# nil))
+                 `(valAt [this# k# else#]
+                         (case k# ~@(mapcat (fn [fld] [(keyword fld) fld])
+                                            base-fields)
+                               (get ~'__extmap k# else#)))
+                 `(getLookupThunk [this# k#]
+                                  (let [~'gclass (class this#)]
+                                    (case k#
+                                      ~@(let [hinted-target (with-meta 'gtarget {:tag tagname})]
+                                          (mapcat
+                                           (fn [fld]
+                                             [(keyword fld)
+                                              `(reify clojure.lang.ILookupThunk
+                                                 (get [~'thunk ~'gtarget]
+                                                   (if (identical? (class ~'gtarget) ~'gclass)
+                                                     (. ~hinted-target ~(symbol (str "-" fld)))
+                                                     ~'thunk)))])
+                                           base-fields))
+                                      nil))))])
+        (imap [[i m]]
+          [(conj i 'clojure.lang.IPersistentMap)
+           (conj m
+                 `(clojure.lang.IPersistentMap.count [this#] (+ ~(count base-fields) (count ~'__extmap)))
+                 `(empty [this#] (throw (InvalidOperationException. (str "Can't create empty: " ~(str classname)))))   ;;; UnsupportedOperationException
+                 `(clojure.lang.IPersistentMap.cons [this# e#] ((var imap-cons) this# e#))                          ;;; type hint added
+                 `(equiv [this# ~gs]
+                         (boolean
+                          (or (identical? this# ~gs)
+                              (when (identical? (class this#) (class ~gs))
+                                (let [~gs ~(with-meta gs {:tag tagname})]
+                                  (and  ~@(map (fn [fld] `(= ~fld (. ~gs ~(symbol (str "-" fld))))) base-fields)
+                                        (= ~'__extmap (. ~gs ~'__extmap))))))))
+                 `(containsKey [this# k#] (not (identical? this# (.valAt this# k# this#))))
+                 `(entryAt [this# k#] (let [v# (.valAt this# k# this#)]
+                                        (when-not (identical? this# v#)
+                                          (clojure.lang.MapEntry/create k# v#))))
+                 `(seq [this#] (seq (concat [~@(map #(list `clojure.lang.MapEntry/create (keyword %) %) base-fields)]
+                                            ~'__extmap)))
+				  ;;  TODO implement generic interfaces -nasser
+				  ;;  `(|System.Collections.Generic.IEnumerable`1[clojure.lang.IMapEntry]|.GetEnumerator [this#]  (.GetEnumerator (clojure.lang.RecordEnumerable. this# [~@(map keyword base-fields)] (clojure.lang.RT/iter ~'__extmap))))
+                 `(clojure.lang.IPersistentMap.assoc [this# k# ~gs]
+                                                     (condp identical? k#
+                                                       ~@(mapcat (fn [fld]
+                                                                   [(keyword fld) (list* `new tagname (replace {fld gs} (remove '#{__hash __hasheq} fields)))])
+                                                                 base-fields)
+                                                       (new ~tagname ~@(remove '#{__extmap __hash __hasheq} fields) (assoc ~'__extmap k# ~gs))))
+                 `(^clojure.lang.IPersistentMap assocEx [this# k# v#]                                       ;;; ADDED
+                                                        (if (.containsKey this# k#)                                                            ;;; ADDED
+                                                          (throw (Exception. "Key already present"))                                         ;;; ADDED
+                                                          (.assoc this# k# v#)))                                                             ;;; ADDED
+                 `(without [this# k#] (if (contains? #{~@(map keyword base-fields)} k#)
+                                        (dissoc (with-meta (into {} this#) ~'__meta) k#)
+                                        (new ~tagname ~@(remove '#{__extmap __hash __hasheq} fields)
+                                             (not-empty (dissoc ~'__extmap k#))))))])
+        (dict [[i m]]
+          [(conj i 'System.Collections.IDictionary)
+           (conj m   ;;; TODO: Need properties, really
+                 `(get_Count [this#] (.count this#))
+                 `(get_IsFixedSize [this#] true)
+                 `(get_IsReadOnly [this#] true)
+                 `(get_IsSynchronized [this#] true)
+                 `(get_Item [this# k#] (.valAt this# k#))
+                 `(^System.Void set_Item [this# k# v#] (throw (NotSupportedException.)))
+                 `(Remove [this# k#] (throw (NotSupportedException.)))
+                 `(get_Keys [this#] (set (keys this#)))
+                 `(get_SyncRoot [this#] this#)
+                 `(get_Values [this#] (set (vals this#)))
+                 `(Add [this# k# v#] (throw (NotSupportedException.)))
+                 `(Clear [this#] (throw (NotSupportedException.)))
+                 `(Contains [this# k#] (.containsKey this# k#))
+                 `(CopyTo [this# a# i#]  (throw (InvalidOperationException.)))   ;;; TODO: implement this.  Got lazy.
+                 `(System.Collections.IDictionary.GetEnumerator [this#]  (clojure.lang.Runtime.ImmutableDictionaryEnumerator. this#))
+                 `(System.Collections.IEnumerable.GetEnumerator [this#]  (.GetEnumerator (clojure.lang.RecordEnumerable. this# [~@(map keyword base-fields)] (clojure.lang.RT/iter ~'__extmap)))))])
+        (cntd [[i m]]                                                                                                                 ;;; ADDED
+          [(conj i 'clojure.lang.Counted)                                                                                         ;;; ADDED
+           (conj m                                                                                                                ;;; ADDED
+                 `(clojure.lang.Counted.count [this#] (+ ~(count base-fields) (count ~'__extmap))))])	                            ;;; ADDED		                   
+        (ipc [[i m]]                                                                                                                  ;;; ADDED
+          [(conj i 'clojure.lang.IPersistentCollection)                                                                            ;;; ADDED
+           (conj m                                                                                                                 ;;; ADDED                   
+                 `(clojure.lang.IPersistentCollection.cons [this# e#]                                                              ;;; ADDED
+                                                           ((var imap-cons) this# e#))                                                                                 ;;; ADDED                   
+                 `(clojure.lang.IPersistentCollection.count [this#] (+ ~(count base-fields) (count ~'__extmap))))])                ;;; ADDED
+        (associative                                                                                                                  ;;; ADDED
+          [[i m]]                                                                                                                 ;;; ADDED
+          [(conj i 'clojure.lang.Associative)                                                                                     ;;; ADDED
+           (conj m                                                                                                                ;;; ADDED
+                 `(clojure.lang.Associative.assoc [this# k# ~gs]                                                                  ;;; ADDED
+                                                  (condp identical? k#                                                                                           ;;; ADDED
+                                                    ~@(mapcat (fn [fld]                                                                                          ;;; ADDED
+                                                                [(keyword fld) (list* `new tagname (replace {fld gs} (remove '#{__hash __hasheq} fields)))])     ;;; ADDED
+                                                              base-fields)                                                                                       ;;; ADDED
+                                                    (new ~tagname ~@(remove '#{__extmap __hash __hasheq} fields) (assoc ~'__extmap k# ~gs)))))])]                ;;; ADDED
+        (let [[i m] (-> [interfaces methods] irecord eqhash iobj ilookup imap associative cntd ipc dict)
+              ff (conj hinted-fields '__meta '__extmap
+                       (with-meta '__hash {:tag System.Int32 :unsynchronized-mutable true})
+                       (with-meta '__hasheq {:tag System.Int32 :unsynchronized-mutable true}))]                              ;;; Associative, ipc, cntd added
+          `(deftype* ~(symbol (name (ns-name *ns*)) (name tagname)) ~classname
+             ~ff
+             :implements ~(vec i)
+             ~@(mapcat identity opts)
+             ~@m))))))
 
 (defn- build-positional-factory
   "Used to build a positional factory for a given type/record.  Because of the
@@ -620,14 +622,17 @@
 
 (defn- emit-method-builder [on-interface method on-method arglists]
   (let [methodk (keyword method)
-        gthis (with-meta (gensym) {:tag 'clojure.lang.AFunction})
+        gthis (gensym)
+        gthis-tagged (with-meta gthis {:tag 'clojure.lang.AFunction})
         ginterf (gensym)]
     `(fn [cache#]
       (let [~ginterf
              (fn
                ~@(map 
                   (fn [args]
-                    (let [gargs (map #(gensym (str "gf__" % "__")) args)
+                    (let [gargs (-> (map #(gensym (str "gf__" % "__")) args)
+                                    vec
+                                    (update 0 vary-meta assoc :tag on-interface))
                           target (first gargs)]
                       `([~@gargs]
                           (. ~(with-meta target {:tag on-interface})  (~(or on-method method) ~@(rest gargs))))))
@@ -639,7 +644,7 @@
                     (let [gargs (map #(gensym (str "gf__" % "__")) args)
                           target (first gargs)]
                       `([~@gargs]
-                          (let [cache# (.__methodImplCache ~gthis)
+                          (let [cache# (.__methodImplCache ~gthis-tagged)
                                 f# (.fnFor cache# (clojure.lang.Util/classOf ~target))]
                             (if f# 
                               (f# ~@gargs)
@@ -663,6 +668,9 @@
                    (if p
                      (str "method " (.sym v) " of protocol " (.sym p))
                      (str "function " (.sym v)))))))))
+
+(defn- tag-from-meta [x]
+  (-> x meta :tag))
 
 (defn- emit-protocol [name opts+sigs]
   (let [iname (symbol (str (munge (namespace-munge *ns*)) "." (munge name)))
@@ -693,7 +701,7 @@
                         {} sigs))
         meths (mapcat (fn [sig]
                         (let [m (munge (:name sig))]
-                          (map #(vector m (vec (repeat (dec (count %))'Object)) 'Object) 
+                          (map #(vector m (vec (map (fn [param] (or (tag-from-meta param) 'Object)) (drop 1 %))) (or (tag-from-meta %) (tag-from-meta m) 'Object)) 
                                (:arglists sig))))
                       (vals sigs))]
   `(do
@@ -825,7 +833,7 @@
 
 (defn- emit-impl [[p fs]]
   [p (zipmap (map #(-> % first keyword) fs)
-             (map #(cons `fn (drop 1 %)) fs))])
+             (map #(cons `fn (list* (gensym p) (drop 1 %))) fs))])
 
 (defn- emit-hinted-impl [c [p fs]]
   (let [hint (fn [specs]
@@ -837,7 +845,7 @@
                               body))
                       specs)))]
     [p (zipmap (map #(-> % first name keyword) fs)
-               (map #(cons `fn (hint (drop 1 %))) fs))]))
+               (map #(cons `fn (list* (gensym (str p "-" c)) (hint (drop 1 %)))) fs))]))
 
 (defn- emit-extend-type [c specs]
   (let [impls (parse-impls specs)]

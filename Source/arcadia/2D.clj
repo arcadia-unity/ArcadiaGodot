@@ -5,7 +5,7 @@
 (defn ^Vector2 position [^Node2D node]
   (.Position node))
 
-(defn ^Vector2 position! [^Node2D node ^Vector2 v]
+(defn position! [^Node2D node ^Vector2 v]
   (.SetPosition node v))
 
 

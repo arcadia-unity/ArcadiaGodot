@@ -14,7 +14,7 @@
     (set! (.origin tx) v)
     (.SetGlobalTransform o tx)))
 
-(defn ^Vector3 local-translation! [^Spatial o ^Vector3 v]
+(defn local-translation! [^Spatial o ^Vector3 v]
   (.SetTranslation o v))
 
 

@@ -1,14 +1,15 @@
-(ns arcadia.internal.config)
+(ns arcadia.internal.config
+  [:import [Arcadia Util Paths]])
 
-(def config 
-  (merge 
-    (read-string 
-      (try (slurp "ArcadiaGodot/configuration.edn" :encoding "utf-8")
-           (catch Exception e "{}")))
-    (read-string
-      (try (slurp "configuration.edn" :encoding "utf-8")
-           (catch Exception e "{}")))))
+(defn load-config []
+  (merge
+   (read-string (Util/LoadText Paths/ArcadiaConfig))
+   (read-string (Util/LoadText Paths/ProjectConfig))))
 
-(defn get-config [] config)
+(def config (atom (load-config)))
 
-(defn get-config-key [s] (get config (keyword s)))
+(defn reload-config [] (reset! config (load-config)))
+
+(defn get-config [] @config)
+
+(defn get-config-key [s] (get @config (keyword s)))

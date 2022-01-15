@@ -1,4 +1,6 @@
-(ns arcadia.internal.namespace)
+(ns arcadia.internal.namespace
+  (:import
+   [Godot GD]))
 
 (defn quickquire
   "Bit like require, but fails with fewer allocations"
@@ -13,4 +15,5 @@
         (require (symbol -ns))
         (eval (read-string s))
         (catch Exception e 
-          (GD/PrintErr (into-array [e])))))))
+          (GD/PrintErr (into-array [e])))
+        ))))

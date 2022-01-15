@@ -1,43 +1,36 @@
 (ns arcadia.internal.compiler
-  (:use
-    arcadia.core)
   (:require
-    clojure.string
-    [arcadia.internal.config :as config])
+   clojure.string
+   [arcadia.core :as arc]
+   [arcadia.internal.config :as config])
   (:import
-    [Arcadia.Boot]))
+   [Arcadia Util Paths]
+   [System.IO Path]))
 
-(defn- aot-namespaces [path nss]
-   ;; We want to ensure that namespaces are neither double-aot'd, nor
-   ;; _not_ aot'd if already in memory.
-   ;; In other words, we want to walk the forest of all the provided
-   ;; namespaces and their dependency namespaces, aot-ing each
-   ;; namespace we encounter in this walk exactly once. `:reload-all`
-   ;; will re-aot encountered namespaces redundantly, potentially
-   ;; invalidating old type references (I think). Normal `require`
-   ;; will not do a deep walk over already-loaded namespaces. So
-   ;; instead we rebind the *loaded-libs* var to a ref with an empty
-   ;; set and call normal `require`, which gives the desired behavior.
-   (let [loaded-libs' (binding [*compiler-options* (get config/config :compiler-options {})
-                                *compile-path* path
-                                *compile-files* true
-                                clojure.core/*loaded-libs* (ref #{})]
-                        (doseq [ns nss]
-                          (log "compiling " ns "..")
-                          (require ns))
-                        @#'clojure.core/*loaded-libs*)]
-     (dosync
-       (alter @#'clojure.core/*loaded-libs* into @loaded-libs'))
-     nil))
+(def arcadia-nss 
+  ['arcadia.internal.namespace 'arcadia.internal.config 'arcadia.repl 'arcadia.internal.nrepl-support])
 
-(defn aot [path ns-syms]
-  "aot ns-syms to the given path, with all dependencies"
-  (Arcadia.Boot/SetClojureLoadPath)
-  (Arcadia.Boot/AddSourcePaths)
-  (aot-namespaces path (concat ns-syms [
-    'clojure.core
-    'clojure.core.server
-    'arcadia.internal.namespace
-    'arcadia.repl]))
-  (Arcadia.Boot/SetClojureLoadPathWithDLLs)
-  (Arcadia.Boot/AddSourcePaths))
+(defn recompile-filesystem []
+  (let [compile-path Paths/Infrastructure
+        file-res-path (. Path Combine "res://" compile-path (str "arcadia.internal.filesystem.clj.dll"))]
+    (arc/log "Recompile arcadia.internal.filesystem in directory: " Paths/Infrastructure)
+    (binding [*compile-path* compile-path
+              clojure.core/*loaded-libs* (ref (sorted-set))]
+      (Util/RemoveFile file-res-path)
+      (arc/log "compiling arcadia.internal.filesystem")
+      (compile 'arcadia.internal.filesystem))))
+
+(defn prepare-export []
+  (let [export-nss (config/get-config-key :export-namespaces)
+        nss (concat arcadia-nss export-nss)
+        compile-path (config/get-config-key :export-folder)]
+    (arc/log "Prepare export in directory: " compile-path)
+    (binding [*compile-path* compile-path
+              clojure.core/*loaded-libs* (ref (sorted-set))]
+      (doall (for [ns nss]
+               (let [file-res-path (. Path Combine "res://" compile-path (str ns ".clj.dll") )]
+                 (Util/RemoveFile file-res-path)
+                 (arc/log "compiling " ns)
+                 (compile ns)))))
+    (recompile-filesystem)
+    ))

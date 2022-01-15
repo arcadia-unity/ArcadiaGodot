@@ -1,0 +1,5 @@
+#!/bin/bash
+ACTUAL_PATH=`dirname "$0"`
+LINKED_PATH=`readlink "$0"`
+ASSEMBLY_PATH=$([ "$LINKED_PATH" ] && echo `dirname "$LINKED_PATH"` || echo "$ACTUAL_PATH")
+mono $ASSEMBLY_PATH/Nostrand.exe "$@"
