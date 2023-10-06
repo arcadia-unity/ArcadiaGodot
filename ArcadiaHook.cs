@@ -4,6 +4,24 @@ using System.Collections.Generic;
 using Path = System.IO.Path;
 using clojure.lang;
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using clojure.lang.CljCompiler.Ast;
+using clojure.lang.Runtime;
+using Microsoft.Scripting.Hosting;
+using RTProperties = clojure.runtime.Properties;
+
+
 namespace Arcadia
 {
 
@@ -49,6 +67,26 @@ namespace Arcadia
                 Path.Combine(System.IO.Directory.GetCurrentDirectory(), "dlls"));
         }
 
+        static IEnumerable<string> GetFindFilePathsRaw()
+        {
+            yield return System.AppDomain.CurrentDomain.BaseDirectory;
+            yield return Path.Combine(System.AppDomain.CurrentDomain.BaseDirectory, "bin");
+            yield return Directory.GetCurrentDirectory();
+            yield return Path.GetDirectoryName(typeof(RT).Assembly.Location);
+
+            Assembly assy = Assembly.GetEntryAssembly();
+            if ( assy != null )
+                yield return Path.GetDirectoryName(assy.Location);
+
+            string rawpaths = (string)System.Environment.GetEnvironmentVariable("CLOJURE_LOAD_PATH");
+            if (rawpaths == null)
+                yield break;
+
+            string[] paths = rawpaths.Split(Path.PathSeparator);
+            foreach (string path in paths)
+                yield return path;
+        }
+
         public static void Initialize()
         {
             if (!_initialized)
@@ -57,6 +95,12 @@ namespace Arcadia
                 GD.Print("Starting Arcadia..");
                 DisableSpecChecking();
                 SetClojureLoadPathWithDLLs();
+
+                GD.Print(typeof(RT).Assembly.Location.GetType());
+                GD.Print("-------");
+                foreach (string path in GetFindFilePathsRaw())
+                    GD.Print(path);
+                GD.Print("-------");
                 RT.load("clojure/core");
                 RT.load("arcadia/internal/namespace");
                 if (OS.IsDebugBuild()) {
@@ -74,7 +118,7 @@ namespace Arcadia
         }
     }
 
-	public class ArcadiaHook : Node
+	public partial class ArcadiaHook : Node
 	{
         public Node target;
         public System.Object state;
@@ -285,7 +329,7 @@ namespace Arcadia
             }
         }
 
-        public override void _Process(float delta)
+        public override void _Process(double delta)
         {
             foreach (var item in _process_fns)
             {
@@ -300,7 +344,7 @@ namespace Arcadia
             }
         }
 
-        public override void _PhysicsProcess(float delta)
+        public override void _PhysicsProcess(double delta)
         {
             foreach (var item in _physics_process_fns)
             {

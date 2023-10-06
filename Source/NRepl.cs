@@ -226,7 +226,7 @@ namespace Arcadia
 					fileNs = Namespace.find(Symbol.create(string.Join(".", nsList.ToArray())));
 					// Debug.Log("Found: " + string.Join(".", nsList.ToArray()));
 				} 
-				catch (Exception e)
+				catch (Exception)
 				{ 
 					/* Whatever sent in :file was not a path. Ignore it */
 					// Debug.Log(":file was not a valid ns");

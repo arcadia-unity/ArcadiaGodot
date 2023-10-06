@@ -1,0 +1,146 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v6.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v6.0": {
+      "Clojure.Main/1.12.0-alpha8": {
+        "dependencies": {
+          "Clojure": "1.12.0-alpha8",
+          "Clojure.Source": "1.12.0-alpha8",
+          "DynamicLanguageRuntime": "1.3.3",
+          "clojure.core.specs.alpha": "0.2.62",
+          "clojure.spec.alpha": "0.3.218"
+        },
+        "runtime": {
+          "Clojure.Main.dll": {}
+        }
+      },
+      "clojure.core.specs.alpha/0.2.62": {
+        "dependencies": {
+          "clojure.spec.alpha": "0.3.218"
+        },
+        "runtime": {
+          "lib/netstandard2.1/clojure.core.specs.alpha.dll": {
+            "assemblyVersion": "0.2.62.0",
+            "fileVersion": "0.2.62.0"
+          }
+        }
+      },
+      "clojure.spec.alpha/0.3.218": {
+        "runtime": {
+          "lib/netstandard2.1/clojure.spec.alpha.dll": {
+            "assemblyVersion": "0.3.218.0",
+            "fileVersion": "0.3.218.0"
+          }
+        }
+      },
+      "clojure.tools.reader/1.3.7": {
+        "runtime": {
+          "lib/netstandard2.1/clojure.tools.reader.dll": {
+            "assemblyVersion": "1.3.7.0",
+            "fileVersion": "1.3.7.0"
+          }
+        }
+      },
+      "DynamicLanguageRuntime/1.3.3": {
+        "dependencies": {
+          "System.CodeDom": "6.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/Microsoft.Dynamic.dll": {
+            "assemblyVersion": "1.3.3.0",
+            "fileVersion": "1.3.3.1000"
+          },
+          "lib/net6.0/Microsoft.Scripting.Metadata.dll": {
+            "assemblyVersion": "1.3.3.0",
+            "fileVersion": "1.3.3.1000"
+          },
+          "lib/net6.0/Microsoft.Scripting.dll": {
+            "assemblyVersion": "1.3.3.0",
+            "fileVersion": "1.3.3.1000"
+          }
+        }
+      },
+      "System.CodeDom/6.0.0": {
+        "runtime": {
+          "lib/net6.0/System.CodeDom.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.21.52210"
+          }
+        }
+      },
+      "Clojure/1.12.0-alpha8": {
+        "dependencies": {
+          "Clojure.Source": "1.12.0-alpha8",
+          "DynamicLanguageRuntime": "1.3.3",
+          "clojure.core.specs.alpha": "0.2.62",
+          "clojure.spec.alpha": "0.3.218",
+          "clojure.tools.reader": "1.3.7"
+        },
+        "runtime": {
+          "Clojure.dll": {}
+        }
+      },
+      "Clojure.Source/1.12.0-alpha8": {
+        "runtime": {
+          "Clojure.Source.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Clojure.Main/1.12.0-alpha8": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "clojure.core.specs.alpha/0.2.62": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-6+kQ/H/Iuo+5YehobqK6ZSixHwa3r0jpve9Gg2MODLzJXBEivzir/DPeIGQmh7Ed8/HIZbNT9lUolYJGvOqeiA==",
+      "path": "clojure.core.specs.alpha/0.2.62",
+      "hashPath": "clojure.core.specs.alpha.0.2.62.nupkg.sha512"
+    },
+    "clojure.spec.alpha/0.3.218": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-j2176IBefpRVSpqmAwZRrZ/yBMKAhIA5+luIkdSTR8HaudvsUBqGbG2hRmONmzxmXtRYSxd/ElEp1wQ+rMcU4g==",
+      "path": "clojure.spec.alpha/0.3.218",
+      "hashPath": "clojure.spec.alpha.0.3.218.nupkg.sha512"
+    },
+    "clojure.tools.reader/1.3.7": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-d93X1WbhGhJmkP3+MxBj93/YFfkZJOII/T80nzLqH7CIGEjr6JlvdZ/jKvWc5qcEq/CSSKaxlHDYpEareGIpjw==",
+      "path": "clojure.tools.reader/1.3.7",
+      "hashPath": "clojure.tools.reader.1.3.7.nupkg.sha512"
+    },
+    "DynamicLanguageRuntime/1.3.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-FZK23PmwdfnXqX5zMf8JufymxAKXGohg2UtEfBgAlNgqXE8pq0MULF7KUUrxxI1Y6rW5OYwQwNCg1jKw2i8VVw==",
+      "path": "dynamiclanguageruntime/1.3.3",
+      "hashPath": "dynamiclanguageruntime.1.3.3.nupkg.sha512"
+    },
+    "System.CodeDom/6.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-CPc6tWO1LAer3IzfZufDBRL+UZQcj5uS207NHALQzP84Vp/z6wF0Aa0YZImOQY8iStY0A2zI/e3ihKNPfUm8XA==",
+      "path": "system.codedom/6.0.0",
+      "hashPath": "system.codedom.6.0.0.nupkg.sha512"
+    },
+    "Clojure/1.12.0-alpha8": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Clojure.Source/1.12.0-alpha8": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
