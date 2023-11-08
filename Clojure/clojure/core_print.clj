@@ -10,7 +10,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; printing ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(import '(System.IO.TextWriter))   ;;; was (import '(java.io Writer))    (I have replaced ^Writer with ^System.IO.TextWriter throughout
+(import 'System.IO.TextWriter)   ;;; was (import '(java.io Writer))    (I have replaced ^Writer with ^System.IO.TextWriter throughout
 ;; Other global replaces:  .write => .Write, .append => .Write, ^Class => ^Type, ^Character => ^Char
 (set! *warn-on-reflection* true)
 (def ^:dynamic 
@@ -248,12 +248,12 @@
 
 (defmethod print-method String [^String s, ^System.IO.TextWriter w]
   (if (or *print-dup* *print-readably*)
-    (do (.Write w \")                          
+    (do (.Write w \")                               ;;; "   (Just to keep the display happy in the editor)
       (dotimes [n (count s)]
         (let [c (.get_Chars s n)                    ;; .charAt => .get_Chars
               e (char-escape-string c)]
-          (if e (.Write w e) (.Write w c))))   
-      (.Write w \"))                           
+          (if e (.Write w e) (.Write w c))))        
+      (.Write w \"))                            ;;; "   (Just to keep the display happy in the editor)
     (.Write w s))                                 
   nil)
 
@@ -263,14 +263,14 @@
   (print-meta v w)
   (print-sequential "[" pr-on " " "]" v w))
 
-(defn- print-prefix-map [prefix m print-one w]
+(defn- print-prefix-map [prefix kvs print-one w]
   (print-sequential
     (str prefix "{")
-    (fn [e ^System.IO.TextWriter w]
-      (do (print-one (key e) w) (.Write w \space) (print-one (val e) w)))
+    (fn [[k v] ^System.IO.TextWriter w]
+      (do (print-one k w) (.Write w \space) (print-one v w)))             ;;; .append
     ", "
     "}"
-    (seq m) w))
+    kvs w))
  
  (defn- print-map [m print-one w]
   (print-prefix-map nil m print-one w))
@@ -282,25 +282,25 @@
     (keyword nil (name named))))
 
 (defn- lift-ns
-  "Returns [lifted-ns lifted-map] or nil if m can't be lifted."
+  "Returns [lifted-ns lifted-kvs] or nil if m can't be lifted."
   [m]
   (when *print-namespace-maps*
     (loop [ns nil
            [[k v :as entry] & entries] (seq m)
-           lm {}]
+           kvs []]
       (if entry
-        (when (or (keyword? k) (symbol? k))
+       (when (qualified-ident? k)
           (if ns
             (when (= ns (namespace k))
-              (recur ns entries (assoc lm (strip-ns k) v)))
+             (recur ns entries (conj kvs [(strip-ns k) v])))
             (when-let [new-ns (namespace k)]
-              (recur new-ns entries (assoc lm (strip-ns k) v)))))
-        [ns (apply conj (empty m) lm)]))))
+              (recur new-ns entries (conj kvs [(strip-ns k) v])))))
+        [ns kvs]))))
 
 (defmethod print-method clojure.lang.IPersistentMap [m, ^System.IO.TextWriter w]
-  (let [[ns lift-map] (lift-ns m)]
+  (let [[ns lift-kvs] (lift-ns m)]
     (if ns
-      (print-prefix-map (str "#:" ns) lift-map pr-on w)
+      (print-prefix-map (str "#:" ns) lift-kvs pr-on w)
       (print-map m pr-on w))))
 
 (defmethod print-dup System.Collections.IDictionary [m, ^System.IO.TextWriter w]    ;;; java.util.Map
@@ -515,7 +515,7 @@
   (print-method [(symbol (.FullName (.GetType o))) (symbol (.Name (.GetMethod o))) (.GetFileName o) (.GetFileLineNumber o)] w))      ;;; (.getClassName o)  (.getMethodName o) .getFileName .getLineNumber
 
 (defn StackTraceElement->vec
-  "Constructs a data representation for a StackTraceElement"
+  "Constructs a data representation for a StackTraceElement: [class method file line]"
   {:added "1.9"}
   [^System.Diagnostics.StackFrame o]
   (if (nil? o)
@@ -528,12 +528,21 @@
      (.GetFileLineNumber o)]))
 
 (defn Throwable->map
-  "Constructs a data representation for a Throwable."
+  "Constructs a data representation for a Throwable with keys:
+    :cause - root cause message
+    :phase - error phase
+    :via - cause chain, with cause keys:
+             :type - exception class symbol
+             :message - exception message
+             :data - ex-data
+             :at - top stack element
+    :trace - root cause stack elements"
   {:added "1.7"}
   [^Exception o]                                                                                                 ;;; ^Throwable
   (let [base (fn [^Exception t]                                                                                  ;;; ^Throwable
-               (merge {:type (symbol (.FullName (class t)))                                                      ;;; .getName
-                       :message (.Message t)}                                                                    ;;; .getLocalizedMessage
+               (merge {:type (symbol (.FullName (class t)))}                                                     ;;; .getName
+                 (when-let [msg (.Message t)]                                                                    ;;; .getLocalizedMessage
+                   {:message msg})
                  (when-let [ed (ex-data t)]
                    {:data ed})
                  (let [st (.GetFrames (System.Diagnostics.StackTrace. t true))]                                  ;;; (.getStackTrace t)
@@ -543,15 +552,16 @@
               (if t
                 (recur (conj via t) (.InnerException t))                                                         ;;; .getCause
                 via))
-        ^Exception root (peek via)                                                                               ;;; Throwable
-        m {:cause (.Message root)                                                                                ;;; (.getLocalizedMessage root)
-           :via (vec (map base via))
-          :trace (vec (map StackTraceElement->vec
-		                   (.GetFrames (System.Diagnostics.StackTrace. (or root o) true))))}                     ;;;  .getStackTrace ^Throwable  
-        data (ex-data root)]
-    (if data
-      (assoc m :data data)
-      m)))
+        ^Exception root (peek via)]                                                                              ;;; Throwable
+    (merge {:via (vec (map base via))
+            :trace (vec (map StackTraceElement->vec
+		                     (.GetFrames (System.Diagnostics.StackTrace. (or root o) true))))}                   ;;;  .getStackTrace ^Throwable  
+      (when-let [root-msg (.Message root)]                                                                       ;;; (.getLocalizedMessage root)
+        {:cause root-msg})
+      (when-let [data (ex-data root)]
+        {:data data})
+      (when-let [phase (-> o ex-data :clojure.error/phase)]
+        {:phase phase}))))
 
 (defn print-throwable [^Exception o ^System.IO.TextWriter w]                                                     ;;; ^Throwable
   (.Write w "#error {\n :cause ")
@@ -559,6 +569,7 @@
         print-via #(do (.Write w "{:type ")
 		               (print-method (:type %) w)
 					   (.Write w "\n   :message ")
+                       (print-method (:message %) w)
              (when-let [data (:data %)]
                (.Write w "\n   :data ")
                (print-method data w))
@@ -602,4 +613,47 @@
   (when (:splicing? o) (.Write w "@"))
   (print-method (:form o) w))
 
-(def ^{:private true} print-initialized true)  
+(def ^{:private true :dynamic true} print-initialized true)  
+
+;;;(defn ^java.io.PrintWriter PrintWriter-on
+;;;  "implements java.io.PrintWriter given flush-fn, which will be called
+;;;  when .flush() is called, with a string built up since the last call to .flush().
+;;;  if not nil, close-fn will be called with no arguments when .close is called"
+;;;  {:added "1.10"}
+;;;  [flush-fn close-fn]
+;;;  (let [sb (StringBuilder.)]
+;;;    (-> (proxy [Writer] []
+;;;          (flush []
+;;;                 (when (pos? (.length sb))
+;;;                   (flush-fn (.toString sb)))
+;;;                 (.setLength sb 0))
+;;;          (close []
+;;;                 (.flush ^Writer this)
+;;;                 (when close-fn (close-fn))
+;;;                 nil)
+;;;          (write [str-cbuf off len]
+;;;                 (when (pos? len)
+;;;                   (if (instance? String str-cbuf)
+;;;                     (.append sb ^String str-cbuf ^int off ^int len)
+;;;                     (.append sb ^chars str-cbuf ^int off ^int len)))))
+;;;        java.io.BufferedWriter.
+;;;        java.io.PrintWriter.)))
+
+(defn ^System.IO.TextWriter PrintWriter-on
+  [flush-fn close-fn]
+  (proxy [System.IO.StringWriter] []  
+    (Flush [] 
+	      (let [^System.IO.StringWriter this this]
+	       (proxy-super Flush))
+	      (let [sb (.GetStringBuilder ^System.IO.StringWriter this)]
+            (when (pos? (.Length sb))
+              (flush-fn (.ToString sb)))
+            (.set_Length sb 0)))
+   (Close []
+          (.Flush ^System.IO.StringWriter this)
+          (when close-fn (close-fn))
+		  (let [^System.IO.StringWriter this this]
+		    (proxy-super Close))
+		  nil)))
+
+

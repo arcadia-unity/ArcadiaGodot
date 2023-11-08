@@ -15,10 +15,12 @@
        :author "Stuart Sierra"}
   clojure.stacktrace)
 
+(set! *warn-on-reflection* true)
+
 (defn root-cause
   "Returns the last 'cause' Throwable in a chain of Throwables."
   {:added "1.1"} 
-  [tr]
+  [^Exception tr]                                                   ;;; Throwable
   (if-let [cause (.InnerException tr)]                              ;;; .getCause
     (recur cause)
     tr))
@@ -26,7 +28,7 @@
 (defn print-trace-element
   "Prints a Clojure-oriented view of one element in a stack trace."
   {:added "1.1"} 
-  [e]                   ;;; in CLR, e will be a StackFrame
+  [^System.Diagnostics.StackFrame e]                                ;;; StackTraceElement
   (let [class (or (when-let [m (.. e  (GetMethod))]
                     (when-let [t (.ReflectedType m)]
                       (.FullName t)))
@@ -41,10 +43,14 @@
   (printf " (%s:%d)" (or (.GetFileName e) "") (.GetFileLineNumber e)))
 
 (defn print-throwable1
-  "Prints the class and message of a Throwable."
+  "Prints the class and message of a Throwable. Prints the ex-data map
+  if present."
   {:added "1.1"} 
-  [tr]
-  (print (str (.FullName (class tr)) ": " (.Message tr))))              ;;;  use when we have printf:  (printf "%s: %s" (.getName (class tr)) (.getMessage tr)))
+  [^Exception tr]                                             ;;; Throwable
+  (printf "%s: %s" (.FullName (class tr)) (.Message tr))      ;;; .getName .getMessage
+  (when-let [info (ex-data tr)]
+    (newline)
+    (pr info)))
 
 (defn print-stack-trace
   "Prints a Clojure-oriented stack trace of tr, a Throwable.
@@ -71,10 +77,10 @@
 (defn print-cause-trace
   "Like print-stack-trace but prints chained exceptions (causes)."
   {:added "1.1"} 
-  ([tr] (print-cause-trace tr nil))
-  ([tr n]
+  ([^Exception tr] (print-cause-trace tr nil))
+  ([^Exception tr n]                                                     ;;; Throwable
      (print-stack-trace tr n)
-     (when-let [cause (.InnerException tr)]                              ;; (.getTrace tr)]
+     (when-let [cause (.InnerException tr)]                              ;;; (.getTrace tr)]
        (print "Caused by: " )
        (recur cause n))))
 

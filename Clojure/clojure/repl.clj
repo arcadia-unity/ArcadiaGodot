@@ -15,7 +15,7 @@
   (:require [clojure.spec.alpha :as spec])
   )   ;;;(:import (java.io LineNumberReader InputStreamReader PushbackReader)
       ;;;         (clojure.lang RT Reflector)))
-
+(set! *warn-on-reflection* true)  ;; DM: Added -- let's see what we can catch
 (def ^:private special-doc-map
   '{. {:url "java_interop#dot"
        :forms [(.instanceMember instance args*)
@@ -94,18 +94,17 @@ itself (not its value) is returned. The reader macro #'x expands to (var x)."}})
      (prn arglists))  
   (cond
     special-form
-    (do
-      (println "Special Form")
-      (println " " doc)
-      (if (contains? m :url)
-        (when url
-          (println (str "\n  Please see http://clojure.org/" url)))
-        (println (str "\n  Please see http://clojure.org/special_forms#" nm))))
+    (println "Special Form")
     macro
     (println "Macro")
     spec
     (println "Spec"))
   (when doc (println " " doc))
+  (when special-form
+    (if (contains? m :url)
+      (when url
+        (println (str "\n  Please see http://clojure.org/" url)))
+      (println (str "\n  Please see http://clojure.org/special_forms#" nm))))
   (when n
     (when-let [fnspec (spec/get-spec (symbol (str (ns-name n)) (name nm)))]
       (println "Spec")
@@ -161,7 +160,7 @@ Example: (source-fn 'filter)"
           (dotimes [_ (dec (:line (meta v)))] (.ReadLine rdr))                      ;;; .readLine
           (let [text (StringBuilder.)
                 pbr (proxy [clojure.lang.PushbackTextReader] [rdr]                  ;;; [PushbackReader] [rdr]
-                      (Read [] (let [i (proxy-super Read)]                          ;;; read read
+                      (Read [] (let [this ^clojure.lang.PushbackTextReader this i (proxy-super Read)]                          ;;; read read  -- add typed binding for this to avoid reflection warning
                                  (.Append text (char i))                            ;;; .append
                                  i)))
                 read-opts (if (.EndsWith ^String filepath "cljc") {:read-cond :allow} {})]                   ;;; .endsWith
@@ -248,9 +247,9 @@ str-or-pattern."
   "Returns a (possibly unmunged) string representation of a StackTraceElement"
   {:added "1.3"}
   [^System.Diagnostics.StackFrame el]                                                   ;;; StackTraceElement
-  (let [file (.GetFileName el)                                       ;;; getFileName
-        clojure-fn? (and file (or (.EndsWith file ".clj")            ;;; endsWith
-		                          (.EndsWith file ".cljc")           ;;; endsWith
+  (let [file (.GetFileName el)                                                          ;;; getFileName
+        clojure-fn? (and file (or (.EndsWith file ".clj")                               ;;; endsWith
+		                          (.EndsWith file ".cljc") (.EndsWith file ".cljr")     ;;; endsWith  + DM: Added .cljr
                                   (= file "NO_SOURCE_FILE")))]
     (str (if clojure-fn?
            (demunge (stack-element-classname el))                              ;;; (.getClassName el))
@@ -269,6 +268,9 @@ str-or-pattern."
 	     (pst (root-cause e) e-or-depth))))
   ([^Exception e depth]                                                            ;;; Throwable
      (binding [*out* *err*]
+       (when (#{:read-source :macro-syntax-check :macroexpansion :compile-syntax-check :compilation}
+               (-> e ex-data :clojure.error/phase))
+         (println "Note: The following stack trace applies to the reader or compiler, your code was not executed."))
        (println (str (-> e class .Name) " "                                        ;;; .getSimpleName 
 	                  (.Message e)                                                 ;;; getMessage
 					  (when-let [info (ex-data e)] (str " " (pr-str info)))))

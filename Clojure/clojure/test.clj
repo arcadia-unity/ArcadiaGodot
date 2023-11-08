@@ -360,7 +360,8 @@
     :fail (merge (stacktrace-file-and-line (drop-while
                                               #(let [cl-name (.FullName (.DeclaringType (.GetMethod ^System.Diagnostics.StackFrame %)))]    ;;; .getClassName ^StackTraceElement
                                                  (or (str/starts-with? cl-name "System.")                                                   ;;; "java.lang.""
-                                                     (str/starts-with? cl-name "clojure.test$")))
+                                                    (str/starts-with? cl-name "clojure.test$")
+                                                    (str/starts-with? cl-name "clojure.core$ex_info")))
                                               (.GetFrames (System.Diagnostics.StackTrace.)))) m)                                            ;;; (.getStackTrace (Thread/currentThread))
      :error (merge (stacktrace-file-and-line (.GetFrames (System.Diagnostics.StackTrace. ^Exception (:actual m) true))) m)                  ;;; (.getStackTrace ^Throwable (:actual m))
     m)))
@@ -446,7 +447,7 @@
            result# (apply ~pred values#)]
        (if result#
          (do-report {:type :pass, :message ~msg,
-                  :expected '~form, :actual (cons ~pred values#)})
+                  :expected '~form, :actual (cons '~pred values#)})
          (do-report {:type :fail, :message ~msg,
                   :expected '~form, :actual (list '~'not (cons '~pred values#))}))
        result#)))
@@ -720,8 +721,8 @@
       (do-report {:type :end-test-var, :var v}))))
 
 (defn test-vars
-  "Groups vars by their namespace and runs test-vars on them with
-   appropriate fixtures applied."
+  "Groups vars by their namespace and runs test-var on them with
+  appropriate fixtures applied."
   {:added "1.6"}
   [vars]
   (doseq [[ns vars] (group-by (comp :ns meta) vars)]
@@ -792,3 +793,37 @@
   [summary]
   (and (zero? (:fail summary 0))
        (zero? (:error summary 0))))
+
+(defn run-test-var
+  "Runs the tests for a single Var, with fixtures executed around the test, and summary output after."
+  {:added "1.11"}
+  [v]
+  (binding [*report-counters* (ref *initial-report-counters*)]
+    (let [ns-obj (-> v meta :ns)
+          summary (do
+                    (do-report {:type :begin-test-ns
+                                :ns   ns-obj})
+                    (test-vars [v])
+                    (do-report {:type :end-test-ns
+                                :ns   ns-obj})
+                    (assoc @*report-counters* :type :summary))]
+      (do-report summary)
+      summary)))
+
+(defmacro run-test
+  "Runs a single test.
+  Because the intent is to run a single test, there is no check for the namespace test-ns-hook."
+  {:added "1.11"}
+  [test-symbol]
+  (let [test-var (resolve test-symbol)]
+    (cond
+      (nil? test-var)
+      (binding [*out* *err*]
+        (println "Unable to resolve" test-symbol "to a test function."))
+
+      (not (-> test-var meta :test))
+      (binding [*out* *err*]
+        (println test-symbol "is not a test."))
+
+      :else
+      `(run-test-var ~test-var))))

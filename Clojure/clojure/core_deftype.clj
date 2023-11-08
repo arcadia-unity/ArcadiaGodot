@@ -67,8 +67,9 @@
       (throw (ArgumentException. (apply print-str "Unsupported option(s) -" bad-opts))))   ;;; IllegalArgumentException
     [interfaces methods opts]))
 
-(defmacro reify 
-  "reify is a macro with the following structure:
+(defmacro reify
+  "reify creates an object implementing a protocol or interface.
+  reify is a macro with the following structure:
 
  (reify options* specs*)
   
@@ -184,7 +185,7 @@
                                     hq#)))
                `(GetHashCode [this#] (let [hash# ~'__hash]                                           ;;; hashCode
                                     (if (zero? hash#)
-                                      (let [h# (clojure.lang.APersistentMap/mapHash this#)]
+                                      (let [h# (clojure.lang.APersistentMap/mapHasheq this#)]        ;;; mapHash
                                         (set! ~'__hash h#)
                                         h#)
                                       hash#)))
@@ -542,7 +543,7 @@
 (defn- expand-method-impl-cache [^clojure.lang.MethodImplCache cache c f]
   (if (.map cache)
     (let [cs (assoc (.map cache) c (clojure.lang.MethodImplCache+Entry. c f))]                            ;;; clojure.lang.MethodImplCache$Entry
-      (clojure.lang.MethodImplCache. (.protocol cache) (.methodk cache) cs))
+      (clojure.lang.MethodImplCache. (.sym cache) (.protocol cache) (.methodk cache) cs))
     (let [cs (into1 {} (remove (fn [[c e]] (nil? e)) (map vec (partition 2 (.table cache)))))
           cs (assoc cs c (clojure.lang.MethodImplCache+Entry. c f))]                                      ;;; clojure.lang.MethodImplCache$Entry
       (if-let [[shift mask] (maybe-min-hash (map hash (keys cs)))]
@@ -553,8 +554,8 @@
                                  (aset t (inc i) e)
                                  t))
                              table cs)]
-          (clojure.lang.MethodImplCache. (.protocol cache) (.methodk cache) shift mask table))
-        (clojure.lang.MethodImplCache. (.protocol cache) (.methodk cache) cs)))))
+          (clojure.lang.MethodImplCache. (.sym cache) (.protocol cache) (.methodk cache) shift mask table))
+        (clojure.lang.MethodImplCache. (.sym cache) (.protocol cache) (.methodk cache) cs)))))
 
 (defn- super-chain [^Type c]           ;;; Class
   (when c
@@ -609,7 +610,7 @@
 (defn -cache-protocol-fn [^clojure.lang.AFunction pf x ^Type c ^clojure.lang.IFn interf]                  ;;; Class
   (let [cache  (.__methodImplCache pf)                                                                       ;;; isInstance
         f (if (.IsInstanceOfType c x)
-            interf 
+            interf
             (find-protocol-method (.protocol cache) (.methodk cache) x))]
     (when-not f
       (throw (ArgumentException. (str "No implementation of method: " (.methodk cache)                         ;;; IllegalArgumentException
@@ -618,7 +619,7 @@
     (set! (.__methodImplCache pf) (expand-method-impl-cache cache (class x) f))
     f))
 
-(defn- emit-method-builder [on-interface method on-method arglists]
+(defn- emit-method-builder [on-interface method on-method arglists extend-via-meta]
   (let [methodk (keyword method)
         gthis (with-meta (gensym) {:tag 'clojure.lang.AFunction})
         ginterf (gensym)]
@@ -638,19 +639,30 @@
                   (fn [args]
                     (let [gargs (map #(gensym (str "gf__" % "__")) args)
                           target (first gargs)]
-                      `([~@gargs]
-                          (let [cache# (.__methodImplCache ~gthis)
-                                f# (.fnFor cache# (clojure.lang.Util/classOf ~target))]
-                            (if f# 
-                              (f# ~@gargs)
-                              ((-cache-protocol-fn ~gthis ~target ~on-interface ~ginterf) ~@gargs))))))
+                      (if extend-via-meta
+                        `([~@gargs]
+                            (let [cache# (.__methodImplCache ~gthis)
+                                  f# (.fnFor cache# (clojure.lang.Util/classOf ~target))]
+                              (if (identical? f# ~ginterf)
+                                (f# ~@gargs)
+                                (if-let [meta# (when-let [m# (meta ~target)] ((.sym cache#) m#))]
+                                  (meta# ~@gargs)
+                                  (if f#
+                                    (f# ~@gargs)
+                                    ((-cache-protocol-fn ~gthis ~target ~on-interface ~ginterf) ~@gargs))))))
+                        `([~@gargs]
+                            (let [cache# (.__methodImplCache ~gthis)
+                                  f# (.fnFor cache# (clojure.lang.Util/classOf ~target))]
+                              (if f#
+                                (f# ~@gargs)
+                                ((-cache-protocol-fn ~gthis ~target ~on-interface ~ginterf) ~@gargs)))))))
                   arglists))]
          (set! (.__methodImplCache f#) cache#)
          f#))))
 
 (defn -reset-methods [protocol]
   (doseq [[^clojure.lang.Var v build] (:method-builders protocol)]
-    (let [cache (clojure.lang.MethodImplCache. protocol (keyword (.sym v)))]
+   (let [cache (clojure.lang.MethodImplCache. (symbol v) protocol (keyword (.sym v)))]
       (.bindRoot v (build cache)))))
 
 (defn- assert-same-protocol [protocol-var method-syms]
@@ -674,7 +686,15 @@
             [opts sigs]))
         sigs (when sigs
                (reduce1 (fn [m s]
-                          (let [name-meta (meta (first s))
+                          (let [tag-to-class (fn [tag]
+                                               (if-let [c (and (instance? clojure.lang.Symbol tag)
+                                                            (= (.IndexOf (.Name ^clojure.lang.Symbol tag) ".") -1)                                                              ;;; .indexOf   .getName
+                                                            (not (contains? '#{int long float double char short byte boolean void uint ulong ushort sbyte                       ;;; add unsigned types
+                                                                               ints longs floats doubles chars shorts bytes booleans objects uints ulongs ushorts sbytes} tag))
+                                                            (resolve tag))]
+                                                 (symbol (.FullName c))                             ;;; .getName 
+                                                 tag))
+                                name-meta (update-in (meta (first s)) [:tag] tag-to-class)
                                 mname (with-meta (first s) nil)
                                 [arglists doc]
                                 (loop [as [] rs (rest s)]
@@ -717,7 +737,8 @@
                                 (mapcat 
                                  (fn [s]
                                    [`(intern *ns* (with-meta '~(:name s) (merge '~s {:protocol (var ~name)})))
-                                    (emit-method-builder (:on-interface opts) (:name s) (:on s) (:arglists s))])
+                                    (emit-method-builder (:on-interface opts) (:name s) (:on s) (:arglists s)
+                                                         (:extend-via-metadata opts))])
                                  (vals sigs)))))
      (-reset-methods ~name)
      '~name)))
@@ -728,6 +749,9 @@
 
     ;optional doc string
     \"A doc string for AProtocol abstraction\"
+
+   ;options
+   :extend-via-metadata true
 
   ;method signatures
     (bar [this a b] \"bar docs\")
@@ -742,6 +766,13 @@
   Java parlance). defprotocol is dynamic, has no special compile-time 
   effect, and defines no new types or classes. Implementations of 
   the protocol methods can be provided using extend.
+
+  When :extend-via-metadata is true, values can extend protocols by
+  adding metadata where keys are fully-qualified protocol function
+  symbols and values are function implementations. Protocol
+  implementations are checked first for direct definitions (defrecord,
+  deftype, reify), then metadata definitions, then external
+  extensions (extend, extend-type, extend-protocol)
 
   defprotocol will automatically generate a corresponding interface,
   with the same name as the protocol, i.e. given a protocol:

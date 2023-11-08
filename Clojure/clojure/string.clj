@@ -218,15 +218,16 @@ Design notes for clojure.string:
 
 (defn split
   "Splits string on a regular expression.  Optional argument limit is
-  the maximum number of splits. Not lazy. Returns vector of the splits."
+  the maximum number of parts. Not lazy. Returns vector of the parts.
+  Trailing empty strings are not returned - pass limit of -1 to return all."
   {:added "1.2"}
-  ([^String s ^Regex re]                                                   ;;; ^Pattern 
-     (LazilyPersistentVector/createOwning (.Split re s)))                  ;;; .split
-  ([^String s ^Regex re limit]                                             ;;; ^Pattern 
-     (LazilyPersistentVector/createOwning (.Split re s limit))))           ;;; .split
+  ([^String s ^Regex re]                                                                                              ;;; ^Pattern 
+     (LazilyPersistentVector/createOwning (clojure.lang.RT/TrimTrailingEmptyStrings (.Split re s))))                  ;;; .split
+  ([^String s ^Regex re limit]                                                                                        ;;; ^Pattern 
+     (LazilyPersistentVector/createOwning (if (< limit 0) (.Split re s) (.Split re s limit)))))                       ;;; .split
  
 (defn split-lines
-  "Splits s on \\n or \\r\\n."
+  "Splits s on \\n or \\r\\n. Trailing empty lines are not returned."
   {:added "1.2"}
   [^String s]
   (split s #"\r?\n"))

@@ -9,7 +9,8 @@
 ;; Java-specific parts of clojure.reflect
 (in-ns 'clojure.reflect)
 
-(require '[clojure.set :as set]
+(require '[clojure.datafy :refer (datafy)]
+         '[clojure.set :as set]
          '[clojure.string :as str])
 
 (import '[System.Reflection TypeAttributes MethodAttributes FieldAttributes PropertyAttributes BindingFlags])
@@ -17,6 +18,8 @@
 ;(import '[clojure.asm ClassReader ClassVisitor Type]
 ;         '[java.lang.reflect Modifier]
 ;         java.io.InputStream)
+
+(set! *warn-on-reflection* true)
 
 (extend-protocol TypeReference
   clojure.lang.Symbol
@@ -31,9 +34,12 @@
   "Given a typeref, create a legal Clojure symbol version of the
    type's name."
   [t]
-  (-> (typename t)
-      ;;;(str/replace "[]" "<>")
-      (symbol)))
+  (cond->
+   (-> (typename t)
+       ;;;(str/replace "[]" "<>")
+       (symbol))
+   (class? t) (with-meta {'clojure.core.protocols/datafy
+                          (fn [_] (datafy t))})))
 
 
 (def class-flags
@@ -149,7 +155,7 @@
   [cls]
   (set (map
         constructor->map
-        (.GetConstructors (cast Type cls) basic-binding-flags)))) 
+        (.GetConstructors ^Type (cast Type cls) basic-binding-flags)))) 
 
 (defrecord Method
   [name return-type declaring-class parameter-types flags])
@@ -168,7 +174,7 @@
   [cls]
   (set (map
         method->map
-        (.GetMethods (cast Type cls) basic-binding-flags))))
+        (.GetMethods ^Type (cast Type cls) basic-binding-flags))))
 
 (defrecord Field
   [name type declaring-class flags])
@@ -186,7 +192,7 @@
   [cls]
   (set (map
         field->map
-        (.GetFields (cast Type cls) basic-binding-flags))))
+        (.GetFields ^Type (cast Type cls) basic-binding-flags))))
 
 (defrecord Property
   [name type declaring-class flags])
@@ -197,20 +203,30 @@
    (symbol (.Name property))
    (typesym (.PropertyType property))
    (typesym (.DeclaringType property))
-   (parse-attributes (.Attributes property) property-flags)))
+   (let [property-attributes  (parse-attributes (.Attributes property) property-flags)
+		 getter (.GetGetMethod property true)
+         method-attributes (when getter (parse-attributes (.Attributes getter) method-flags))]
+	 (set/union property-attributes method-attributes))))
+  
 
 (defn- declared-properties
   "Return a set of the declared fields of class as a Clojure map."
   [cls]
   (set (map
         property->map
-        (.GetProperties (cast Type cls) basic-binding-flags))))
+        (.GetProperties ^Type (cast Type cls) basic-binding-flags))))
+
+(defn- typeref->class
+  ^Type [typeref ]                                                            ;;; classloader arg removed    ^Class 
+  (if (class? typeref)
+    typeref
+  (clojure.lang.RT/classForName (typename typeref))))                  ;;;  false classloader
 
 
 (deftype ClrReflector [a]
   Reflector
   (do-reflect [_ typeref]
-           (let [cls (clojure.lang.RT/classForName (typename typeref))]
+           (let [cls (typeref->class typeref)]                          ;;; classloader arg
              {:bases (not-empty (set (map typesym (bases cls))))
               :flags (parse-attributes (.Attributes cls) class-flags)
               :members (set/union (declared-fields cls)

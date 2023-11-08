@@ -53,3 +53,24 @@ C:\dev\godot4\arcadia-dev\dlls
 https://learn.microsoft.com/en-us/dotnet/api/system.reflection.assembly.location?view=net-7.0 states that "In .NET 5 and later versions, for bundled assemblies, the value returned is an empty string.", maybe this is just a bug with CLR for net 5+
 
 From here, I probably need to build CLR myself with a little edit to discard empty paths 
+
+# 11/7/2023
+
+I had written a whole journal entry here while in linux about trying to get clojure-clr to build with dotnet BUT it was very trivial with Visual Studio. 
+
+After some help from dmiller and Daniel Gerson on the #CLR slack I am building clojure-clr for net6.0 and the filepaths error is resolved. I removed the old clojure namespace dlls and replaced the clojure source.  Seems to be close to working, I am getting an error when compiling one of the clojure .clj files:
+
+```
+E 0:00:07:0001   :0 @ System.String clojure.lang.Util.NameForType(System.Type ): System.TypeInitializationException: The type initializer for 'clojure.lang.RT' threw an exception. ---> clojure.lang.Compiler+CompilerException: Syntax error macroexpanding at (C:\dev\godot4\arcadia-dev\ArcadiaGodot\Clojure\clojure\clr\io.clj:1:1). ---> System.NullReferenceException: Object reference not set to an instance of an object.
+  <C++ Error>    System.TypeInitializationException
+  <C++ Source>   :0 @ System.String clojure.lang.Util.NameForType(System.Type )
+  <Stack Trace>  :0 @ System.String clojure.lang.Util.NameForType(System.Type )
+                 :0 @ System.Type clojure.lang.Namespace.importClass(System.Type )
+                 :0 @ System.Object clojure.clr.io$eval11901loading__5860__auto____11906__11909.invoke()
+                 :0 @ System.Object clojure.clr.io$eval11901__11912.invokeStatic()
+                 :0 @ System.Object clojure.clr.io$eval11901__11912.invoke()
+                 :0 @ System.Object clojure.lang.Compiler.eval(System.Object )
+                 :0 @ System.Object clojure.lang.Compiler.eval(System.Object )
+                 :0 @ System.Object clojure.lang.Compiler.load(System.IO.TextReader , System.String , System.String , System.String )
+                 :0 @ --- End of inner exception stack trace ---()
+```

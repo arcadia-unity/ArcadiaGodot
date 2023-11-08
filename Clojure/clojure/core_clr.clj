@@ -13,12 +13,36 @@
 ;;;;;; Extensions to core for the CLR platform  ;;;;;;;
 
 
+;; we don't have into yet
+(defn- temp-into 
+  "Returns a new coll consisting of to-coll with all of the items of
+  from-coll conjoined."
+  {:added "1.0"}
+  [to from]
+    (let [ret to items (seq from)]
+      (if items
+        (recur (conj ret (first items)) (next items))
+        ret)))
+
  
- (defmacro gen-delegate 
-    [type argVec & body] 
-	(with-meta `(clojure.lang.GenDelegate/Create ~type (fn ~argVec ~@body))
-	           (meta &form)))                                                ;;;  How can we tag with ~type if that is not computed yet
-    
+(defmacro gen-delegate
+    [type-sym argVec & body]
+    (let [type (clojure.lang.CljCompiler.Ast.HostExpr/MaybeType type-sym true)]
+      (when-not type 
+         (throw (ArgumentException. (str type-sym " is not a type"))))
+      (let [invoke-method (.GetMethod type "Invoke")
+            param-infos (.GetParameters invoke-method)
+            param-types (map #(.ParameterType ^System.Reflection.ParameterInfo %) param-infos)
+            typed-params (temp-into [] (map #(if (and (.IsPrimitive ^Type %2) (not= %2 Int64) (not= %2 Double)) 
+			                              %1 
+										  (with-meta %1 (assoc (meta %1) :tag (symbol (.FullName ^Type %2))))) 
+									   argVec 
+									   param-types))
+			type-params (with-meta typed-params {:tag (.ReturnType invoke-method)})]
+	    `(let [d# ^{:tag ~type-sym} (clojure.lang.GenDelegate/Create ~type (fn ~typed-params ~@body))]
+		    d#))))
+                
+
 ;;; Additional numeric casts
 ;;; Somewhat useless until our arithmetic package is extended to support all these types.
 
@@ -183,7 +207,9 @@
   "Translates to a gen-delegate for a System.Action<,...> call"
   {:added "1.3"}
   [typesyms & body]
-  (generate-generic-delegate "System.Action" typesyms body))  
+  (if (= (count typesyms) 0)
+    `(gen-delegate System.Action [] ~@body)
+    (generate-generic-delegate "System.Action" typesyms body)))  
 
 
 ; Attribute handling
@@ -329,3 +355,24 @@
   [^String ns-root ^String fs-root]
   (swap! *ns-load-mappings* conj
 	[(.Replace ns-root "." "/") fs-root]))
+
+
+;; Framework version -- alpha
+
+(def framework-description (System.Runtime.InteropServices.RuntimeInformation/FrameworkDescription))
+
+(defn- parse-framework-description [] 
+    (let [descr framework-description
+          prefixes '(( ".NET Framework " :framework)  (".NET Native "  :native) (".NET Core " :core)  (".NET " :dotnet))          
+          try-parse (fn [[^String s k]] (when (.StartsWith descr s) [k (.Substring descr (.Length s))]))]
+        (some try-parse prefixes)))
+
+(def dotnet-platform (first (parse-framework-description)))
+(def dotnet-version (second (parse-framework-description)))
+
+(defmacro compile-when
+  {:added "1.11"}
+  [exp & body]
+  (when (try (eval exp)
+           (catch Exception _ false))                      ;;; Throwable
+    `(do ~@body)))
