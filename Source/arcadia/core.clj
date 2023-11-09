@@ -2,8 +2,8 @@
   (:require
     clojure.string)
   (:import 
-    [Godot Node GD ResourceLoader 
-      Node Node2D SceneTree Sprite Spatial]))
+    [Godot GD ResourceLoader 
+      Node Node2D]))
 
 (defn log
   "Log message to the Godot Editor console. Arguments are combined into a string."
@@ -12,8 +12,8 @@
 
 (defn obj 
   "Will return nil if the object instance is not valid."
-  [^Godot.Object o]
-  (if (Godot.Object/IsInstanceValid o) o nil))
+  [^Godot.GodotObject o]
+  (if (Godot.GodotObject/IsInstanceValid o) o nil))
 
 (defn node-path [s] (Godot.NodePath. s))
 
@@ -117,7 +117,7 @@
   Godot.Color     14
   Godot.NodePath  15
   Godot.RID       16
-  Godot.Object    17
+  Godot.GodotObject    17
   Godot.Collections.Dictionary 18
   Godot.Collections.Array 19
   System.Byte     20
@@ -130,20 +130,20 @@
 
 (defonce ^:private adhoc-signals (AdhocSignals.))
 
-(defn ^:private _connect [^Node node ^String signal-name ^Godot.Object o f]
+(defn ^:private _connect [^Node node ^String signal-name ^Godot.GodotObject o f]
   (let [guid (str (System.Guid/NewGuid))]
     (.Register o guid f)
     (.Connect node signal-name o "CatchMethod" 
       (Godot.Collections.Array. (into-array Object [guid])) 0)))
 
 (defn connect
-  "Connects a node's signal to a function. These connections share a Godot.Object 
+  "Connects a node's signal to a function. These connections share a Godot.GodotObject 
    instance and only one connection can be made for each node's signal."
   [^Node node ^String signal-name f]
   (_connect node signal-name adhoc-signals f))
 
 (defn connect*
-  "Like `connect` but uses a unique Godot.Object for multiple connections to one 
+  "Like `connect` but uses a unique Godot.GodotObject for multiple connections to one 
    signal. Returns the object if you need to `disconnect` or `destroy` it later."
   [^Node node ^String signal-name f]
   (let [o (AdhocSignals.)]
@@ -154,7 +154,7 @@
    as the third argument."
   ([^Node node ^String signal-name]
     (connected? node signal-name adhoc-signals))
-  ([^Node node ^String signal-name ^Godot.Object o]
+  ([^Node node ^String signal-name ^Godot.GodotObject o]
     (.IsConnected node signal-name o "CatchMethod")))
 
 (defn disconnect
@@ -162,24 +162,24 @@
    the third argument."
   ([^Node node ^String signal-name]
     (disconnect node signal-name adhoc-signals))
-  ([^Node node ^String signal-name ^Godot.Object o]
+  ([^Node node ^String signal-name ^Godot.GodotObject o]
     (.Disconnect node signal-name o "CatchMethod")))
 
 (defn add-signal 
   "Adds a user signal to the object, which can then be emitted with `emit`. args 
    should be type literals matching those listed in the `Godot.Variant.Type` enum"
-  ([^Godot.Object o ^String name]
+  ([^Godot.GodotObject o ^String name]
     (AdhocSignals/AddSignal o name))
-  ([^Godot.Object o ^String name & args]
+  ([^Godot.GodotObject o ^String name & args]
     (let [variants (remove nil? (map (fn [t] (get variants-enum t 17)) args))
           names    (take (count variants) alphabet)]
       (AdhocSignals/AddSignal o name (into-array System.String names) (into-array System.Int32 variants)))))
 
 (defn emit
   "Emit's a node's signal."
-  ([^Godot.Object o ^String name]
+  ([^Godot.GodotObject o ^String name]
     (.EmitSignal o name (|System.Object[]|. 0)))
-  ([^Godot.Object o ^String name & args]
+  ([^Godot.GodotObject o ^String name & args]
     (.EmitSignal o name (into-array Object args))))
 
 

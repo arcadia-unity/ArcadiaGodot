@@ -74,3 +74,19 @@ E 0:00:07:0001   :0 @ System.String clojure.lang.Util.NameForType(System.Type ):
                  :0 @ System.Object clojure.lang.Compiler.load(System.IO.TextReader , System.String , System.String , System.String )
                  :0 @ --- End of inner exception stack trace ---()
 ```
+
+# 11/7/2023
+
+Looking into the io.clj issue, it's probably just a bad import of TextReader? 
+
+Actually strangely enough i am thinking that TextReader class is being mentioned in that error because it's used by the .load mechanism. because if I remove the import of it it I still see it in the call stack. maybe I have to bisect imports until I find the one that is breaking things
+
+importing either of these is breaking it: `(System.Net.Sockets Socket NetworkStream)`
+
+I'm going to comment out the usage there and see if I can get clojure up and running at least.. Also having trouble with `System.Net.Webclient` classes in that ns
+
+I wonder if Godot's C# does not support these? I can try to use them from a C# script later on.
+
+Good news it's compiled clojure and I'm on to arcadia cljs:
+
+Just working through small differences, several imports threw errors but weren't being used. `Godot.Object` is now `Godot.GodotObject`

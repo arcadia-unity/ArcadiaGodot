@@ -21,8 +21,8 @@
        StreamReader StreamWriter
        StringReader StringWriter 
        TextReader TextWriter)
-     (System.Net.Sockets 
-       Socket NetworkStream) 
+     #_(System.Net.Sockets 
+       Socket NetworkStream)
      (System.Text 
        Encoding UTF8Encoding UnicodeEncoding UTF32Encoding UTF7Encoding ASCIIEncoding Decoder Encoder)
      (System 
@@ -331,14 +331,14 @@
                            (make-output-stream (Uri. x) opts)
                            (catch UriFormatException err
                              (make-output-stream (FileInfo. x) opts))))))
-(extend Socket
+#_(extend Socket
   IOFactory
   (assoc default-streams-impl
     :make-input-stream (fn [^Socket x opts] (NetworkStream. x (file-access :read opts)))
     :make-output-stream (fn [^Socket x opts] (NetworkStream. x (file-access :write opts)))))
 
 
-(extend Uri
+#_(extend Uri
   IOFactory
   (assoc default-streams-impl
     :make-input-stream (fn [^Uri x opts]
