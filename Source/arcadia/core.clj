@@ -2,8 +2,12 @@
   (:require
     clojure.string)
   (:import 
+    [Arcadia ArcadiaHook]
     [Godot GD ResourceLoader 
-      Node Node2D]))
+      Node Node2D]
+    [Socket.Net.Sockets Socket]))
+
+(Socket.Net.Socket.Socket. )
 
 (defn log
   "Log message to the Godot Editor console. Arguments are combined into a string."
@@ -110,13 +114,13 @@
   Godot.Vector3   7
   Godot.Transform2D 8
   Godot.Plane     9
-  Godot.Quat      10
-  Godot.AABB      11
+  Godot.Quaternion 10
+  ;Godot.AABB      11
   Godot.Basis     12
-  Godot.Transform 13
+  Godot.Transform3D 13
   Godot.Color     14
   Godot.NodePath  15
-  Godot.RID       16
+  ;Godot.RID       16
   Godot.GodotObject    17
   Godot.Collections.Dictionary 18
   Godot.Collections.Array 19

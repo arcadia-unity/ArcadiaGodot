@@ -21,12 +21,15 @@ using clojure.lang.Runtime;
 using Microsoft.Scripting.Hosting;
 using RTProperties = clojure.runtime.Properties;
 
+using System.Net.Sockets;
+
 
 namespace Arcadia
 {
-
     public class Boot {
         private static bool _initialized = false;
+
+        public static Socket sock = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
         static void DisableSpecChecking()
         {

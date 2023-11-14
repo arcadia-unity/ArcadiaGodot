@@ -75,7 +75,7 @@ E 0:00:07:0001   :0 @ System.String clojure.lang.Util.NameForType(System.Type ):
                  :0 @ --- End of inner exception stack trace ---()
 ```
 
-# 11/7/2023
+# 11/8/2023
 
 Looking into the io.clj issue, it's probably just a bad import of TextReader? 
 
@@ -90,3 +90,59 @@ I wonder if Godot's C# does not support these? I can try to use them from a C# s
 Good news it's compiled clojure and I'm on to arcadia cljs:
 
 Just working through small differences, several imports threw errors but weren't being used. `Godot.Object` is now `Godot.GodotObject`
+
+# 11/9/2023
+
+`arcadia.core` compiling, `clojure.main` ns can't find `clojure/spec/alpha`, where is clojure spec?? Pasting it in, hope it's the right version
+
+ok now it's complaining about an import in `core.server` while compiling the repl stuff. Guessing it's the Socket etc. like it couldn't do in io.clj. It's probably time to figure out why i can't import these classes, guess my first avenue will be to try and use them in a C# class 
+
+```
+(ns ^{:doc "Socket server support"
+      :author "Alex Miller"}
+  clojure.core.server
+  (:require [clojure.string :as str]
+            [clojure.edn :as edn]
+            [clojure.main :as m])
+  (:import
+   [clojure.lang LineNumberingTextReader]                                                    ;;; LineNumberingPushbackReader
+   [System.Net.Sockets Socket SocketException TcpListener TcpClient]                         ;;; [java.net InetAddress Socket ServerSocket SocketException]
+   [System.IO StreamReader StreamWriter TextReader  IOException]                              ;;; [java.io Reader Writer PrintWriter BufferedWriter BufferedReader InputStreamReader OutputStreamWriter]
+   [System.Net Dns IPAddress]))  
+```
+
+Hmm, i can absolutely use these in C# like `public static Socket sock = new Socket(SocketType.Stream, ProtocolType.Tcp);`, what is going on?
+
+Looking at the error I am now suspecting that `clojure.lang.Util.NameForType` is failing in some situations, preventing these imports.
+
+```
+E 0:00:17:0466   :0 @ System.String clojure.lang.Util.NameForType(System.Type ): clojure.lang.Compiler+CompilerException: Syntax error macroexpanding at (C:\dev\godot4\arcadia-dev\ArcadiaGodot\Source\arcadia\core.clj:1:1). ---> System.NullReferenceException: Object reference not set to an instance of an object.
+  <C++ Error>    clojure.lang.Compiler+CompilerException
+  <C++ Source>   :0 @ System.String clojure.lang.Util.NameForType(System.Type )
+  <Stack Trace>  :0 @ System.String clojure.lang.Util.NameForType(System.Type )
+                 :0 @ System.Type clojure.lang.Namespace.importClass(System.Type )
+                 :0 @ System.Object arcadia.core$eval27655loading__20258__auto____27660__27663.invoke()
+```
+
+I'll guess next rebuild Clojure.dll with some debug prints and see what the null is from, looks like the Type.FullName property can return null
+
+# 11/12/2023
+
+Actually no, the type passed in is null..
+
+Having a hard time debugging this, would be great if I could print to some kind of console. My current assumption is that something broke in higher NET versions with resolving a type from a string name.  Currently looking at `RT.classForName` which is used in `ImportExpr.cs`'s `Eval`
+
+# 11/13/2023
+
+In Visual Studio I am building the Clojure.Compile solution with a targetframework of net6.0 in hopes that it will trigger the import issue and be easier to debug. It's running into a similar thing:
+
+```
+TypeNotFoundException: Unable to find type: System.Runtime.InteropServices.RuntimeInformation
+---
+This exception was originally thrown at this call stack:
+    clojure.lang.RT.classForNameE(string) in RT.cs
+    clojure.lang.CljCompiler.Ast.HostExpr.MaybeType(object, bool) in HostExpr.cs
+    clojure.lang.Compiler.MacroexpandSeq1(clojure.lang.ISeq) in Compiler.cs
+    clojure.lang.Compiler.AnalyzeSeq(clojure.lang.CljCompiler.Ast.ParserContext
+```
+
