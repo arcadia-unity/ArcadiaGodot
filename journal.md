@@ -146,3 +146,31 @@ This exception was originally thrown at this call stack:
     clojure.lang.Compiler.AnalyzeSeq(clojure.lang.CljCompiler.Ast.ParserContext
 ```
 
+# 11/13/2023
+
+So something interesting, when printing a class that couldn't resolve with GetType the error goes away, so there must be some sort of tree shaking going on that isn't including some classes.  
+
+```
+Type t = Type.GetType(p, false);
+if (t == null)
+{
+    Console.WriteLine(String.Format("cant GetType {0}", p));
+    Console.WriteLine(String.Format(".. {0}", System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription));
+}
+```
+
+I could potentially get everything to compile by just including code that references the missing classes. Would be better to figure out how to preserve a list of namespaces or something in the project.
+
+adding this to `RT.cs`
+
+```
+        static void NoTrim()
+        {
+            var a = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+            var b = System.Net.Sockets.Socket.OSSupportsIPv4;
+            var c = System.Net.Sockets.NetworkStream.Null;
+
+        }
+```
+
+I think this will all work but I'm having a hell of a time getting it to build with target `net6.0` again, going to try tomorrow
