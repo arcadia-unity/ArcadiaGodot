@@ -1,5 +1,7 @@
 (ns arcadia.internal.autocompletion
-  (:require [clojure.main]))
+  (:require [clojure.main])
+  (:import [System.Reflection
+            BindingFlags]))
 
 ;; This namespace has been adapted from a fork of the `clojure-complete` library by @sogaiu:
 ;; https://github.com/sogaiu/clojure-complete/blob/clr-support/src/complete/core.cljc

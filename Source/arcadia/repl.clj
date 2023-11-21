@@ -1,7 +1,6 @@
 (ns arcadia.repl
   (:refer-clojure :exclude [with-bindings])
   (:require 
-    [arcadia.core]
     [arcadia.internal.config]
     [clojure.main :as m]
     [clojure.string :as str]
@@ -20,17 +19,6 @@
 (defn log [& args]
   "Log message to the Godot Editor console. Arguments are combined into a string."
   (GD/Print (into-array (map #(str % " ") args))))
-
-;; hack to have tooling eval on main thread (as instancing some node types on a thread is currently very slow) 
-
-(defn main-thread [f]
-  (arcadia.core/timeout 0.0001 f))
-
-(defn main-thread-load-path [s]
-  (main-thread (fn [] (load-file s))))
-
-(defn main-thread-eval [s]
-  (main-thread (fn [] (eval s))))
 
 ;; ============================================================
 
@@ -253,7 +241,7 @@
                                       (while @server-running
                                         (try 
                                           (listen-and-block socket)
-                                          (main-thread (fn [] (eval-queue))) ;do we need a queue?
+                                          (eval-queue) ;do we need a queue?
                                           (catch SocketException ex
                                             (if (not= (.ErrorCode ex) SocketError/TimedOut)
                                               (throw (Exception. "Unexpected Socket error" ex))))))

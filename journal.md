@@ -146,7 +146,7 @@ This exception was originally thrown at this call stack:
     clojure.lang.Compiler.AnalyzeSeq(clojure.lang.CljCompiler.Ast.ParserContext
 ```
 
-# 11/13/2023
+# 11/16/2023
 
 So something interesting, when printing a class that couldn't resolve with GetType the error goes away, so there must be some sort of tree shaking going on that isn't including some classes.  
 
@@ -174,3 +174,55 @@ adding this to `RT.cs`
 ```
 
 I think this will all work but I'm having a hell of a time getting it to build with target `net6.0` again, going to try tomorrow
+
+# 11/17/2023
+
+Still trying to get `Clojure.Compile` solution to run in `net6.0`, the trimming fix above does work.  I ran into the `System.Net.WebClient` issue which is weird because it's not a trimmed class, so maybe an import issue with how the CLR references things? I commented out those lines in io.clj ALTHOUGH now that I think about it it's possible URI is needed when compiling all of clojure?
+
+Now I'm getting another import error in `clojure.core.server`, maybe i can find the string it's trying to import in the Visual Studio call stack debugger (which is nice and has all the variables from each stack frame).. No it goes from evaluating the entire ns form to a null type in `importClass` oh well i can just bisect the namespace imports i guess.
+
+Looks like it was `System.Net.IPAddress` and `Dns`, having trouble actually compiling my code changes, i clean the solution but even then sometimes it doesn't seem to work.
+
+Now it's missing something in `clojure.clr.shell` 
+
+Ok it's compiling everything, putting it into Arcadia and it says the Repls are up!! Very tired will pick this up later.
+
+# 11/18/2023
+
+Mopping up some errors, imports seem stricter where i used to be able to refer to a class that was imported in another namespace I think? Can't actually connect to the repl with telnet, and that crossplatform file watcher has a Godot usage error. My sublime's arcadia-repl isn't working on this new computer either so I probably have a lot to do before I'm set up comfortably to work through the actual feature set.
+
+Ok repls are up, I removed the eval on main thread thing which had a problem but shouldn't be needed anyway. Think from here it's:
+
+[] work through arcadia namespaces testing each function/concept
+[] clean up Infrastructure dlls and add compiled clojure (this speeds up startup)
+[] build and include `Release` clojure dlls
+[] test compilation, project export
+[] test linux, osx
+[] switch with main branch, update readme
+
+# 11/20/2023
+
+error with the file watcher, I'd be my text editor hasn't released the file or something.  I'll need to compare with godot3.. also this wasn't happening before i changed the main thread thing so maybe a simple delay would fix it.  (also wondering if i should just go back to the old file watcher)
+
+It's definitely a transient race condition,
+
+```
+System.IO.IOException: The process cannot access the file 'C:\dev\godot4\arcadia-dev\game.clj' because it is being used by another process.
+     at Microsoft.Win32.SafeHandles.SafeFileHandle.CreateFile(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+     at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+     at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+     at System.IO.FileInfo.OpenText()
+     at clojure.lang.Compiler.loadFile(String fileName) in C:\dev\clojure-clr\Clojure\Clojure\CljCompiler\Compiler.cs:line 1802
+     at clojure.lang.RT.LoadFileFn.invoke(Object arg1) in C:\dev\clojure-clr\Clojure\Clojure\Lib\RT.cs:line 351
+     at Arcadia.Util.Invoke(Var v, Object a) in C:\dev\godot4\arcadia-dev\ArcadiaGodot\Source\Util.cs:line 77
+     at CrossPlatformArcadiaWatcher.DrainChanges(Object stateInfo) in C:\dev\godot4\arcadia-dev\ArcadiaGodot\Source\CrossPlatformArcadiaWatcher.cs:line 96
+```
+
+Well quick fix i just return on IOExcpetion so it tries again next loop.
+
+Attempting to aot compile like `(arcadia.internal.compiler/aot "ArcadiaGodot/Infrastructure" ['clojure.core])` and it's failing with `clojure.lang.Compiler+CompilerException: Syntax error compiling deftype* at (clojure/gvec.clj:37:2).` BUT it works the first time? Very weird
+
+Testing arcadia.core:
+
+* looks like the group stuff takes a `Godot.StringName` instead of a `str` or `System.String`
+* `change-scene` returns an `InvalidParameter` object.. internally it was changed to `.ChangeSceneToFile`.. wonder if it expects a path object? 

@@ -4,10 +4,7 @@
   (:import 
     [Arcadia ArcadiaHook]
     [Godot GD ResourceLoader 
-      Node Node2D]
-    [Socket.Net.Sockets Socket]))
-
-(Socket.Net.Socket.Socket. )
+      Node Node2D]))
 
 (defn log
   "Log message to the Godot Editor console. Arguments are combined into a string."
@@ -43,21 +40,21 @@
    (.CallGroup scene-tree group method (to-array args))))
 
 (defn group!
-  ([node s] (group! node s true))
-  ([node s pers] (.AddToGroup node s pers)))
+  ([node ^Godot.StringName s] (group! node s true))
+  ([node ^Godot.StringName s pers] (.AddToGroup node s pers)))
 
-(defn in-group? [^Godot.Node node ^System.String group]
+(defn in-group? [^Godot.Node node ^Godot.StringName group]
   (.IsInGroup node group))
 
-(defn objects-in-group [^System.String group]
+(defn objects-in-group [^Godot.StringName group]
   (.GetNodesInGroup (Godot.Engine/GetMainLoop) group))
 
-(defn change-scene
+(defn change-scene ;FIXME
   "Changes the root scene to the one at the given path"
   [s]
-  (.ChangeScene (Godot.Engine/GetMainLoop) (str "res://" s)))
+  (.ChangeSceneToFile (Godot.Engine/GetMainLoop) (str "res://" s)))
 
-(defn load-scene [s]
+(defn load-scene [s] ;FIXME
   (let [scene (ResourceLoader/Load (str "res://" s) "PackedScene" true)]
     scene))
 

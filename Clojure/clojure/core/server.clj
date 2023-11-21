@@ -16,7 +16,8 @@
    [clojure.lang LineNumberingTextReader]                                                    ;;; LineNumberingPushbackReader
    [System.Net.Sockets Socket SocketException TcpListener TcpClient]                         ;;; [java.net InetAddress Socket ServerSocket SocketException]
    [System.IO StreamReader StreamWriter TextReader  IOException]                              ;;; [java.io Reader Writer PrintWriter BufferedWriter BufferedReader InputStreamReader OutputStreamWriter]
-   [System.Net Dns IPAddress]))                                                              ;;;  [java.util.concurrent.locks ReentrantLock]
+   [System.Net Dns IPAddress]
+   ))                                                              ;;;  [java.util.concurrent.locks ReentrantLock]
 
 (set! *warn-on-reflection* true)
 

@@ -93,7 +93,11 @@ public class CrossPlatformArcadiaWatcher
                     GD.Print("reloading ", path);
                     try
                     {
-                        Arcadia.Util.Invoke(RT.var("arcadia.repl", "main-thread-load-path"), path);
+                        Arcadia.Util.Invoke(RT.var("clojure.core", "load-file"), path);
+                    }
+                    catch (System.IO.IOException e) // race condition, possible your editor hasn't finished with file?
+                    {
+                        return;
                     }
                     catch (System.Exception e)
                     {
