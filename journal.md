@@ -226,3 +226,68 @@ Testing arcadia.core:
 
 * looks like the group stuff takes a `Godot.StringName` instead of a `str` or `System.String`
 * `change-scene` returns an `InvalidParameter` object.. internally it was changed to `.ChangeSceneToFile`.. wonder if it expects a path object? 
+
+# 11/21/2023
+
+Changing scene can only be done from the main thread.  This is probably enough reason to bring back the eval on main thread repl stuff.
+
+Fixing up `timeout` which was how I was getting main thread eval, it uses the signal stuff via `connect` which is throwing errors, I imagine there's a lot of issues there with the whole variant enum stuff.
+
+```
+System.InvalidCastException: Unable to cast object of type 'System.ArrayEnumerator' to type 'System.IDisposable'.
+   at clojure.lang.Runtime.IEnumeratorOfTWrapper`1.Dispose(Boolean disposing) in C:\dev\clojure-clr\Clojure\Clojure\Runtime\ConversionWrappers.cs:line 303
+   at clojure.lang.Runtime.IEnumeratorOfTWrapper`1.Dispose() in C:\dev\clojure-clr\Clojure\Clojure\Runtime\ConversionWrappers.cs:line 293
+   at Godot.Collections.Array..ctor(IEnumerable`1 collection) in /root/godot/modules/mono/glue/GodotSharp/GodotSharp/Core/Array.cs:line 46
+   at CallSite.Target(Closure, CallSite, Type, Object)
+   at System.Dynamic.UpdateDelegates.UpdateAndExecute2[T0,T1,TRet](CallSite site, T0 arg0, T1 arg1)
+   at arcadia.core$_connect__35829.__interop_ctor_35833(Type, Object)
+```
+
+reading https://docs.godotengine.org/en/stable/tutorials/scripting/c_sharp/c_sharp_signals.html
+
+I am realizing i probably need to get like intelli rider or whatever set up so I can actually see my statically typed options on stuff.
+
+so i was binding arguments to a connect call withan array like this: `(.Connect node signal-name o "CatchMethod" (Godot.Collections.Array. (into-array Object [guid])) 0)`, now I'm having trouble constructing an array that contains the `System.Object` type. Going to read up on Godot Variants in godot 4.. Actually VisualStudio does all that.
+
+Thinking i'll eventually just make a helper that creates `Godot.Collections.Array` objects
+
+# 11/25/2023
+
+Thinking about how to reimplement the `connect` systems.  In Godot3 you had to Connect to a method on an object, so I created `AdhocSignals` with a generic `CatchMethod` that would call a fn in a hashmap.
+
+The new API is `button.Connect(Button.SignalName.ButtonDown, Callable.From(OnButtonDown));`. Likely i'll have to have a C# helper that converts clojure IFn to callable to make use of that. (worst case scenario I still have to use the fn hashmap)
+
+Actually got it working in clojure! like this:
+
+```
+(.Connect (.CreateTimer (Godot.Engine/GetMainLoop) 0.1 true false false) 
+  (Godot.StringName. "timeout") 
+  (let [f (fn [] (log "hahaha"))] (Godot.Callable/From (sys-action [] (f))))
+  0)
+```
+
+Here's a System.Action with arguments: `(.Invoke (sys-action [System.String] [a] (log a)) "ha")`, I assume that would work for any signal that takes args. I'll have to experiment with it, would prefer Arcadia users not to have to use the `sys-action` macro with types. 
+
+So my problem is, I can easily connect user code to a signal with 0 args, but beyond that how does Arcadia know how many args to use on the Callable? In my connect system for Godot3 I used overloading to have a CatchMethod for every arity.. is something like that possible? What happens when `Callable.From(OnButtonDown)` has overloads?
+
+# 11/29/2023
+
+Let's see if i can get custom signals working so i can test signals with arities. 
+
+`EmitSignal(StringName signal, params Variant[] args)` is using the C# variadic params thing, cool but I can't make use of that from clojure.  A stack overflow says i can just pass in an `object[]` though, which is what I was doing before.
+
+```
+(add-signal o "frog")
+(emit o (Godot.StringName "frog"))
+```
+getting this error?
+```
+System.InvalidCastException: Unable to cast object of type 'System.RuntimeType' to type 'clojure.lang.IFn'.
+   at game$eval34590__34595.invokeStatic()
+   at game$eval34590__34595.invoke()
+   at clojure.core$eval__17555.invokeStatic(Object)
+```
+
+# 12/01/2023
+
+My bad, typo with my `Godot.StringName.`

@@ -1,6 +1,7 @@
 using System;
 using clojure.lang;
 using System.Collections.Generic;
+using Godot;
 
 namespace Arcadia
 {
@@ -97,13 +98,44 @@ namespace Arcadia
 			return f;
 		}
 
+		public static void Scratchpad()
+		{
+
+		}
+
+/*		public static Callable MakeCallable(IFn f)
+		{
+			return Callable.From<IFn>(f as Action);
+		}*/
+
 		// ==================================================================
 		// Arrays
 
-		// Could use linq for this stuff, but sometimes there's a virtue
-		// to explicitness and nonmagic
+		// cast System.Object[] to godot variant collection
+		public static Godot.Collections.Array MakeGodotArray< T>(T[] col){
+			var a = new Godot.Collections.Array();
+			for (int i = 0; i < col.Length; i++)
+			{
+				a.Add(Godot.Variant.From(col[i]));
+			}
 
-		public static T[] ArrayAppend<T> (T[] arr, T x)
+            return a;
+		}
+
+        public static Godot.Variant[] ObjectToVariantArray(System.Object[] col)
+        {
+            var a = new Godot.Variant[col.Length];
+            for (int i = 0; i < col.Length; i++)
+            {
+                a[i] = Godot.Variant.From(col[i]);
+            }
+            return a;
+        }
+
+        // Could use linq for this stuff, but sometimes there's a virtue
+        // to explicitness and nonmagic
+
+        public static T[] ArrayAppend<T> (T[] arr, T x)
 		{
 			T[] arr2 = new T[arr.Length + 1];
 			arr.CopyTo(arr2, 0);

@@ -179,9 +179,9 @@
 (defn emit
   "Emit's a node's signal."
   ([^Godot.GodotObject o ^String name]
-    (.EmitSignal o name (|System.Object[]|. 0)))
-  ([^Godot.GodotObject o ^String name & args]
-    (.EmitSignal o name (into-array Object args))))
+    (AdhocSignals/Emit o name))
+  ([^Godot.GodotObject o ^String name a]
+    (AdhocSignals/Emit o name a)))
 
 
 (def hook-types {
@@ -259,7 +259,7 @@
 (defn timeout 
   "invoke fn `f` after `n` seconds"
   [^System.Double n ^clojure.lang.IFn f]
-  (connect (.CreateTimer (Godot.Engine/GetMainLoop) n true) "timeout" f))
+  (connect (.CreateTimer (Godot.Engine/GetMainLoop) n true false false) "timeout" f))
 
 (def tween-ease-enum {
   :in     0

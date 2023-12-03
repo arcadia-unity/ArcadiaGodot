@@ -31,6 +31,8 @@ namespace Arcadia
 
         public static Socket sock = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
+
+
         static void DisableSpecChecking()
         {
             System.Environment.SetEnvironmentVariable("CLOJURE_SPEC_CHECK_ASSERTS", "false");

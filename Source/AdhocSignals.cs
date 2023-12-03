@@ -18,7 +18,17 @@ public partial class AdhocSignals : Godot.Node
 		o.AddUserSignal(name, arguments);
 	}
 
-	public Dictionary<string, IFn> functions = new Dictionary<string, IFn>();
+	public static void Emit(Godot.GodotObject o, string name)
+	{
+		o.EmitSignal(name);
+	}
+
+    public static void Emit(Godot.GodotObject o, string name, Godot.Variant a)
+    {
+        o.EmitSignal(name, a);
+    }
+
+    public Dictionary<string, IFn> functions = new Dictionary<string, IFn>();
 
 	public void Register(string hash, IFn f){
 		try
