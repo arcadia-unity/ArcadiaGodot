@@ -1,6 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using clojure.lang;
+using System.Runtime.CompilerServices;
 
 public partial class AdhocSignals : Godot.Node
 {
@@ -27,6 +28,9 @@ public partial class AdhocSignals : Godot.Node
     {
         o.EmitSignal(name, a);
     }
+
+
+
 
     public Dictionary<string, IFn> functions = new Dictionary<string, IFn>();
 

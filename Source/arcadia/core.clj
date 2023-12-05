@@ -134,14 +134,18 @@
 (defn ^:private _connect [^Node node ^String signal-name ^Godot.GodotObject o f]
   (let [guid (str (System.Guid/NewGuid))]
     (.Register o guid f)
-    (.Connect node signal-name o "CatchMethod" 
+    (.Connect node (Godot.StringName. signal-name)
+      (Godot.Callable. o (Godot.StringName. "CatchMethod"))
+     o "CatchMethod" 
       (Godot.Collections.Array. (into-array Object [guid])) 0)))
 
 (defn connect
   "Connects a node's signal to a function. These connections share a Godot.GodotObject 
    instance and only one connection can be made for each node's signal."
   [^Node node ^String signal-name f]
-  (_connect node signal-name adhoc-signals f))
+  ;(_connect node signal-name adhoc-signals f)
+  ;TODO figure out arities
+  (.Connect node (Godot.StringName. signal-name) (Godot.Callable/From (sys-action [] (f))) 0))
 
 (defn connect*
   "Like `connect` but uses a unique Godot.GodotObject for multiple connections to one 

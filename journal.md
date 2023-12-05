@@ -291,3 +291,28 @@ System.InvalidCastException: Unable to cast object of type 'System.RuntimeType' 
 # 12/01/2023
 
 My bad, typo with my `Godot.StringName.`
+
+# 12/02/2023
+
+Thinking about trying to fix up `Connect` with a callable on the `CatchMethod` that uses `bindv`, basically the same system as godot3.
+
+Uhg stymied again: https://github.com/godotengine/godot/issues/66106.
+
+What i need is to connect a clojure fn *with arguments* to a signal.
+
+* I could have users provide delegates or actions like `(sys-action [System.String] [a] (log a))` for non zero arities
+
+# 12/04/2023
+
+Getting really tripped up with arities on `Connect` and `EmitSignal`, in the interest of keeping moving I've replaced `arcadia.core/connect` with a simple version for zero arities, emit is working as well for zero arities:
+
+```clj
+(timeout 0.01 (fn [] (change-scene "3d.tscn")))
+
+(def o (Godot.Node.))
+(add-signal o "frog")
+(connect o "frog" (fn [] (log "got frog")))
+(emit o "frog")
+```
+
+Think now i can resume working through the arcadia namespace.
